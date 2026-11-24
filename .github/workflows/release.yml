@@ -1,11 +1,12 @@
 name: Release
 
-# Roda quando a main recebe o merge da dev (ou manualmente). Calcula a versão
-# pelos commits desde a última tag (docs/versioning.md), cria a tag vX.Y.Z e o
-# GitHub Release. Sem commits feat/fix novos, nada é publicado.
+# Roda SÓ manualmente (Actions > Release > Run workflow, na main): assim o dono decide quando
+# sai uma versão e o merge na main não gera release sozinho. Calcula a versão pelos commits desde
+# a última tag (docs/versioning.md), cria a tag vX.Y.Z e o GitHub Release. Sem commits feat/fix
+# novos, nada é publicado. Para voltar ao release automático a cada merge, descomente o push:
 on:
-  push:
-    branches: [main]
+  # push:
+  #   branches: [main]
   workflow_dispatch:
 
 concurrency:
