@@ -4,7 +4,7 @@
 
 use cap_core::app::{CamCtl, Lister, MicMeter, Recorder, RegionPick, Update, UrlOpen};
 use cap_core::domain::{Devices, RecCfg, RecState, Region, Targets};
-use cap_core::log::{log_ipc, log_ui as ui_line};
+use cap_core::log::{log_ipc, log_ipc_err, log_ui as ui_line};
 use cap_core::media::PickChan;
 use cap_core::ports::Log;
 use cap_core::Res;
@@ -81,17 +81,18 @@ pub fn submit_region(st: St<'_>, region: Option<Region>) {
 }
 
 #[tauri::command]
-pub async fn start_rec(st: St<'_>, mut cfg: RecCfg) -> Result<(), String> {
+pub async fn start_rec(st: St<'_>, mut cfg: RecCfg) -> Result<String, String> {
     // Microfone vazio significa "sem microfone".
     cfg.mic_id = cfg.mic_id.filter(|m| !m.is_empty());
     blk(st, "start_rec", move |c| {
-        c.rec.start(&cfg)?;
+        let warns = c.rec.start(&cfg)?;
         // O VU meter é só visual: se falhar, a gravação segue. Se já mede
         // este microfone (ligado pela barra), `start` reaproveita sem erro.
         if let Some(m) = &cfg.mic_id {
             let _ = c.meter.start(m);
         }
-        Ok(())
+        // Avisos (ex.: áudio dispensado) seguem juntos para a interface; vazio = tudo certo.
+        Ok(warns.join(" "))
     })
     .await
 }
@@ -153,7 +154,9 @@ pub fn open_logs(st: St<'_>) -> Result<(), String> {
 /// `https://github.com/klawdyo/kapture/releases/*`; o resto é recusado).
 #[tauri::command]
 pub fn open_url(st: St<'_>, url: String) -> Result<(), String> {
-    st.url.open(&url).map_err(|e| e.0)
+    let r = st.url.open(&url).map_err(|e| e.0);
+    log_ipc_err(&*st.log, "open_url", &r);
+    r
 }
 
 /// Inicia o ciclo de atualização em segundo plano (uma vez por execução;
@@ -173,6 +176,9 @@ pub async fn update_apply(st: St<'_>) -> Result<(), String> {
 
 /// Redimensiona a janela da barra (px lógicos), mantendo centro e base.
 #[tauri::command]
-pub fn fit_toolbar(app: tauri::AppHandle, w: f64, h: f64) -> Result<(), String> {
-    crate::fit_toolbar(&app, w, h)
+pub fn fit_toolbar(st: St<'_>, app: tauri::AppHandle, w: f64, h: f64) -> Result<(), String> {
+    let r = crate::fit_toolbar(&app, w, h);
+    // Chamado a cada mudança da barra: só as falhas vão ao log.
+    log_ipc_err(&*st.log, "fit_toolbar", &r);
+    r
 }

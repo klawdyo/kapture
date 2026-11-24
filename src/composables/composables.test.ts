@@ -103,6 +103,13 @@ describe('useToolbar', () => {
     await t.start()
     expect((b.calls.find((c) => c[0] === 'start')![1] as { region: unknown }).region).toEqual(b.region)
   })
+  it('aviso do backend (áudio dispensado) aparece na barra sem parar a gravação', async () => {
+    const t = useToolbar()
+    b.warn = 'Não foi possível usar o microfone; a gravação segue sem ele.'
+    await t.start()
+    expect(t.rec.value.state).toBe('rec')
+    expect(t.err.value).toBe(b.warn)
+  })
   it('atalho alterna gravação', async () => {
     const t = useToolbar()
     await t.init()
@@ -285,6 +292,22 @@ describe('useRegion', () => {
     r.key(new KeyboardEvent('keydown', { key: 'Enter' }))
     await flush()
     expect(b.calls).toEqual([])
+  })
+  it('converte para físicos globais com a origem e a escala do monitor da janela', async () => {
+    history.replaceState(null, '', '/region.html?ox=-1920&oy=-100&s=1.25')
+    try {
+      const r = useRegion()
+      r.down(100, 100)
+      r.move(300, 260)
+      r.up()
+      r.key(new KeyboardEvent('keydown', { key: 'Enter' }))
+      await flush()
+      expect(b.calls.filter((c) => c[0] === 'submitRegion').map((c) => c[1])).toEqual([
+        { x: -1795, y: 25, w: 250, h: 200 },
+      ])
+    } finally {
+      history.replaceState(null, '', '/')
+    }
   })
   it('mostra erro ao enviar', async () => {
     b.fail = 'sem janela'

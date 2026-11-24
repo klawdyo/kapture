@@ -1,29 +1,76 @@
 //! Captura de áudio com WASAPI (modo compartilhado, por polling):
-//! microfone e loopback do sistema. O WASAPI converte para 48 kHz,
-//! 16 bits, estéreo (`AUTOCONVERTPCM`), então não há reamostragem no app.
+//! microfone e loopback do sistema.
+//!
+//! O fluxo é aberto SEMPRE no formato nativo do mix do dispositivo
+//! (`GetMixFormat`): `AUTOCONVERTPCM` não é aceito junto de `LOOPBACK` e
+//! `SRC_DEFAULT_QUALITY` só vale com `AUTOCONVERTPCM`; qualquer um deles
+//! devolvia `E_INVALIDARG`. A conversão para i16 estéreo 48 kHz é feita em
+//! software por `cap_core::media::Conv` (lógica pura, testada).
 
-use super::super::com::{log_err, wide};
+use super::super::com::{log_err, take_pwstr, wide};
 use crate::logging;
-use cap_core::media::{CH, RATE};
+use cap_core::log::hresult;
+use cap_core::media::{audio_fail_line, fmt_desc, parse_fmt, Conv};
 use cap_core::{CapErr, Res};
 use windows::core::PCWSTR;
+use windows::Win32::Devices::FunctionDiscovery::PKEY_Device_FriendlyName;
 use windows::Win32::Media::Audio::{
     eConsole, eRender, IAudioCaptureClient, IAudioClient, IMMDevice, IMMDeviceEnumerator,
     MMDeviceEnumerator, AUDCLNT_BUFFERFLAGS_SILENT, AUDCLNT_SHAREMODE_SHARED,
-    AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM, AUDCLNT_STREAMFLAGS_LOOPBACK,
-    AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, WAVEFORMATEX, WAVE_FORMAT_PCM,
+    AUDCLNT_STREAMFLAGS_LOOPBACK, WAVEFORMATEX, WAVEFORMATEXTENSIBLE,
 };
-use windows::Win32::System::Com::{CoCreateInstance, CLSCTX_ALL};
+use windows::Win32::System::Com::StructuredStorage::{PropVariantClear, PropVariantToStringAlloc};
+use windows::Win32::System::Com::{CoCreateInstance, CoTaskMemFree, CLSCTX_ALL, STGM_READ};
 
-/// Leitor de uma fonte de áudio.
+/// Leitor de uma fonte de áudio (já convertido para i16 estéreo 48 kHz).
 pub struct Reader {
     client: IAudioClient,
     cap: IAudioCaptureClient,
+    conv: Conv,
 }
 
-fn fail(e: windows::core::Error) -> CapErr {
-    log_err("áudio (WASAPI)", &e);
-    CapErr::from(format!("Falha ao abrir o áudio: {}", e.message()))
+/// Registra uma falha de uma etapa da abertura (com dispositivo e formato) e devolve o erro.
+fn fail(step: &str, dev: &str, fmt: &str, e: windows::core::Error) -> CapErr {
+    logging::get().error(&audio_fail_line(step, dev, fmt, e.code().0, &e.message()));
+    CapErr::from(format!(
+        "Falha ao abrir o áudio ({step}, {})",
+        hresult(e.code().0)
+    ))
+}
+
+/// Nome amigável do dispositivo (ou o id, ou "?" se nada funcionar).
+fn dev_name(dev: &IMMDevice) -> String {
+    // SAFETY: APIs COM padrão; strings alocadas são liberadas em `take_pwstr`.
+    unsafe {
+        let id = dev.GetId().map(take_pwstr).unwrap_or_else(|_| "?".into());
+        let Ok(store) = dev.OpenPropertyStore(STGM_READ) else {
+            return id;
+        };
+        let Ok(mut pv) = store.GetValue(&PKEY_Device_FriendlyName) else {
+            return id;
+        };
+        let name = PropVariantToStringAlloc(&pv).map(take_pwstr).unwrap_or(id);
+        let _ = PropVariantClear(&mut pv);
+        name
+    }
+}
+
+/// Lê o formato do mix (copiando os campos) e libera o bloco do COM.
+fn read_mix(client: &IAudioClient) -> windows::core::Result<(WAVEFORMATEX, u16)> {
+    // SAFETY: `GetMixFormat` devolve um bloco do COM com ao menos um
+    // WAVEFORMATEX; com a etiqueta extensível ele é um WAVEFORMATEXTENSIBLE
+    // (lido sem alinhamento, pois a estrutura é `packed`). Liberado uma vez.
+    unsafe {
+        let p = client.GetMixFormat()?;
+        let f = p.read_unaligned();
+        let mut sub = 0u16;
+        if f.wFormatTag == cap_core::media::TAG_EXT {
+            let x = p as *const WAVEFORMATEXTENSIBLE;
+            sub = std::ptr::addr_of!((*x).SubFormat).read_unaligned().data1 as u16;
+        }
+        CoTaskMemFree(Some(p as *const _));
+        Ok((f, sub))
+    }
 }
 
 impl Reader {
@@ -51,46 +98,64 @@ impl Reader {
     }
 
     fn open(dev: &IMMDevice, loopback: bool) -> Res<Reader> {
-        let fmt = WAVEFORMATEX {
-            wFormatTag: WAVE_FORMAT_PCM as u16,
-            nChannels: CH as u16,
-            nSamplesPerSec: RATE,
-            nAvgBytesPerSec: RATE * CH as u32 * 2,
-            nBlockAlign: CH as u16 * 2,
-            wBitsPerSample: 16,
-            cbSize: 0,
+        let name = dev_name(dev);
+        let kind = if loopback {
+            "som do sistema"
+        } else {
+            "microfone"
         };
-        let mut flags =
-            AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
-        if loopback {
-            flags |= AUDCLNT_STREAMFLAGS_LOOPBACK;
-        }
-        // SAFETY: sequência padrão de inicialização do WASAPI; `fmt` vive
-        // durante `Initialize` (que copia o formato).
+        // SAFETY: sequência padrão de inicialização do WASAPI; o formato do
+        // mix é lido por `read_mix` e só é usado dentro de `Initialize`.
         unsafe {
-            let client: IAudioClient = dev.Activate(CLSCTX_ALL, None).map_err(fail)?;
+            let client: IAudioClient = dev
+                .Activate(CLSCTX_ALL, None)
+                .map_err(|e| fail("Activate", &name, "?", e))?;
+            let (mix, sub) = read_mix(&client).map_err(|e| fail("GetMixFormat", &name, "?", e))?;
+            let (tag, bits, ch, rate) = (
+                mix.wFormatTag,
+                mix.wBitsPerSample,
+                mix.nChannels,
+                mix.nSamplesPerSec,
+            );
+            let desc = format!("tag {tag:#06x}, {bits} bits, {ch} canais, {rate} Hz");
+            let Some(fmt) = parse_fmt(tag, bits, ch, rate, sub) else {
+                logging::get().error(&format!(
+                    "áudio: formato do mix não suportado (dispositivo '{name}', {kind}): {desc}"
+                ));
+                return Err(CapErr::from(
+                    "Formato de áudio do dispositivo não suportado.",
+                ));
+            };
+            let fd = fmt_desc(&fmt);
+            // Só o loopback leva flag; o formato é o nativo (sem conversão do WASAPI).
+            let flags = if loopback {
+                AUDCLNT_STREAMFLAGS_LOOPBACK
+            } else {
+                0
+            };
             // Buffer de 200 ms (unidades de 100 ns).
             client
-                .Initialize(AUDCLNT_SHAREMODE_SHARED, flags, 2_000_000, 0, &fmt, None)
-                .map_err(fail)?;
-            let cap: IAudioCaptureClient = client.GetService().map_err(fail)?;
-            client.Start().map_err(fail)?;
+                .Initialize(AUDCLNT_SHAREMODE_SHARED, flags, 2_000_000, 0, &mix, None)
+                .map_err(|e| fail("Initialize", &name, &fd, e))?;
+            let cap: IAudioCaptureClient = client
+                .GetService()
+                .map_err(|e| fail("GetService", &name, &fd, e))?;
+            client.Start().map_err(|e| fail("Start", &name, &fd, e))?;
             logging::get().info(&format!(
-                "áudio: leitor aberto ({})",
-                if loopback {
-                    "som do sistema"
-                } else {
-                    "microfone"
-                }
+                "áudio: leitor aberto ({kind}, '{name}', {fd}, flags {flags:#x})"
             ));
-            Ok(Reader { client, cap })
+            Ok(Reader {
+                client,
+                cap,
+                conv: Conv::new(fmt),
+            })
         }
     }
 
-    /// Acrescenta a `out` todas as amostras disponíveis agora.
-    pub fn read(&self, out: &mut Vec<i16>) {
+    /// Acrescenta a `out` todas as amostras (i16 estéreo 48 kHz) disponíveis agora.
+    pub fn read(&mut self, out: &mut Vec<i16>) {
         // SAFETY: cada GetBuffer é pareado com ReleaseBuffer; o slice cobre
-        // exatamente `frames * canais` amostras i16 do buffer devolvido.
+        // exatamente `frames * bytes por quadro` bytes do buffer devolvido.
         unsafe {
             while let Ok(n) = self.cap.GetNextPacketSize() {
                 if n == 0 {
@@ -104,11 +169,11 @@ impl Reader {
                 {
                     break;
                 }
-                let len = frames as usize * CH;
                 if flags & AUDCLNT_BUFFERFLAGS_SILENT.0 as u32 != 0 || p.is_null() {
-                    out.resize(out.len() + len, 0);
+                    self.conv.push_silence(frames as usize, out);
                 } else {
-                    out.extend_from_slice(std::slice::from_raw_parts(p as *const i16, len));
+                    let len = frames as usize * self.conv.block();
+                    self.conv.push(std::slice::from_raw_parts(p, len), out);
                 }
                 if self.cap.ReleaseBuffer(frames).is_err() {
                     break;
@@ -127,5 +192,6 @@ impl Drop for Reader {
 
 fn enumerator() -> Res<IMMDeviceEnumerator> {
     // SAFETY: criação padrão do enumerador (COM já inicializado na thread).
-    unsafe { CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL) }.map_err(fail)
+    unsafe { CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL) }
+        .map_err(|e| fail("CoCreateInstance(MMDeviceEnumerator)", "?", "?", e))
 }

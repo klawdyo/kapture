@@ -34,9 +34,9 @@ packaging/msix/             # AppxManifest + script MakeAppx
 | list_targets | - | Targets |
 | list_devices | - | Devices |
 | toggle_cam | `{visible:boolean, devId?:string}` | void |
-| pick_region | - | Region \| null (abre janela `region-selector`) |
-| submit_region | `{region: Region \| null}` | void (chamado pelo seletor) |
-| start_rec | `{cfg: RecCfg}` | void |
+| pick_region | - | Region \| null (abre uma janela `region-selector-N` por monitor; `null` = cancelou, sem erro) |
+| submit_region | `{region: Region \| null}` | void (chamado pelo seletor de qualquer monitor; encerra e destrói as janelas de todos os monitores) |
+| start_rec | `{cfg: RecCfg}` | string (aviso em português, vazio se tudo certo; ex.: "Não foi possível usar o microfone; a gravação segue sem ele.": a fonte de áudio que não abriu é dispensada e o vídeo continua; a interface mostra o aviso na barra) |
 | pause_rec / resume_rec | - | void |
 | stop_rec | - | string (caminho do MP4) |
 | get_state | - | RecState |
@@ -50,6 +50,13 @@ packaging/msix/             # AppxManifest + script MakeAppx
 | fit_toolbar | w,h (px lógicos) | void (redimensiona a janela `toolbar` mantendo centro e base; `Backend.fitBar`) |
 Erros: string em português.
 
+Áudio (WASAPI, `adapters/win/capture/audio.rs`): cada fonte (microfone e som do sistema por loopback) é aberta em modo
+compartilhado no formato NATIVO do dispositivo (`GetMixFormat`; o loopback só leva `AUDCLNT_STREAMFLAGS_LOOPBACK`, o
+microfone nenhuma flag: `AUTOCONVERTPCM` com `LOOPBACK` dava `E_INVALIDARG`). A conversão para i16 estéreo 48 kHz é feita
+em software por `cap_core::media::Conv` (PCM 16/24/32 e float 32, qualquer número de canais e taxa, reamostragem linear,
+saturação). Uma fonte que falha ao abrir não derruba a gravação: o erro (etapa, nome do dispositivo, formato e HRESULT em
+hexadecimal) vai ao log e `Capture::start` devolve um aviso para o usuário.
+
 Regras do VU meter (`MicMeter`, testadas em cap-core): no máximo um medidor ativo.
 `mic_start` com o mesmo microfone já medido é no-op; com outro, reinicia sem erro.
 `start_rec` reaproveita o medidor ligado (e o inicia se não houver); `stop_rec` NÃO o desliga:
@@ -61,7 +68,10 @@ Câmera: o `id` de `Dev` da câmera é o nome amigável; o deviceId do getUserMe
 ## Logs em disco
 Porta `Log` (`ports.rs`: `write(lvl, msg)` mais `debug/info/warn/error`), nunca falha nem bloqueia.
 - REAL: `cap_core::logfile::FileLog` (só `std`, sem `log`/`tracing`), grava e dá `flush` a cada linha em
-  `%LOCALAPPDATA%\kapture\logs\kapture.log` (SHGetKnownFolderPath, depois a env `LOCALAPPDATA`, depois a pasta temporária).
+  `%LOCALAPPDATA%\kapture\logs\kapture.log` (env `LOCALAPPDATA`, sem COM; `FileLog::first_usable` testa criar a pasta e abrir o
+  arquivo e, se falhar, cai para `<temp>\kapture\logs`). A primeira linha da sessão traz a versão; a segunda, o caminho completo
+  do arquivo (`arquivo de log: ...`); se a pasta preferida falhou, uma linha WARN diz qual e por quê. `open_logs` abre a pasta
+  REALMENTE usada. Todo erro de comando IPC vai ao log com o nome do comando (`ipc <nome>: erro: ...`); `fit_toolbar` só registra falhas.
 - FAKE: `fakes::FakeLog` (guarda `(Lvl, String)`; `msgs()`, `has()`).
 - Lógica pura em `cap_core::log` (100% de cobertura): linha `2026-01-02T03:04:05.678Z INFO  mensagem` (UTC, nível com 5
   colunas, quebras de linha viram continuação indentada), mensagens truncadas em 4000 bytes, rotação por tamanho
@@ -95,7 +105,7 @@ Frontend: `Backend.updateStart()` (`update_start`), `Backend.updateApply()` (`up
 - CSP: `connect-src 'self' ipc: http://ipc.localhost https://api.github.com`. Capability `core:app:allow-version`.
 
 ## Eventos (emit)
-`mic-level` `{level:number 0..1}` | `rec-state` RecState | `update-state` UpdState (ver Atualizações) | `hotkey` (Ctrl+Shift+R alterna gravação)
+`mic-level` `{level:number 0..1}` | `rec-state` RecState (o adaptador também liga `set_content_protected` na `toolbar` quando `protected(state)` é verdadeiro, isto é, em `rec`/`paused`, e desliga em `idle`) | `update-state` UpdState (ver Atualizações) | `hotkey` (Ctrl+Shift+R alterna gravação)
 
 ## Janelas
-`toolbar` (painel 720x136 px, cantos arredondados, sem moldura, transparente com `windowEffects` mica e fundo semi-opaco por CSS como fallback, centralizada na base da área de trabalho; cresce +48 px com a linha extra de alvo/configurações e vira pílula 150x48 gravando, via `fit_toolbar`), na pílula só há ponto indicador, cronômetro e Parar (sem botão de pausa na UI; `pause_rec`/`resume_rec` seguem no backend), semitransparente (opacity .72, 1 em hover/foco) e arrastável; `webcam` (quadrada 1:1, transparente, topo, arrastável/redimensionável), `region-selector` (fullscreen, sob demanda; o retângulo desenha, move por dentro e redimensiona pelas 8 alças; setas movem 1 px, Shift 10 px, Alt+setas redimensionam; mínimo 16x16, preso à tela; Enter confirma, Esc cancela). Entradas Vite: `index.html` (toolbar), `webcam.html`, `region.html`.
+`toolbar` (painel 720x136 px, cantos arredondados, sem moldura, transparente, sem sombra nem `windowEffects` (o DWM desenhava uma borda preta de canto reto em volta do painel arredondado; borda fina e fundo semi-opaco são só CSS), centralizada na base da área de trabalho; cresce +48 px com a linha extra de alvo/configurações e vira pílula 150x48 gravando, via `fit_toolbar`), na pílula só há ponto indicador, cronômetro e Parar (sem botão de pausa na UI; `pause_rec`/`resume_rec` seguem no backend), semitransparente (opacity .72, 1 em hover/foco) e arrastável; `webcam` (quadrada 1:1, transparente, topo, arrastável/redimensionável), `region-selector-0`, `-1`... (uma por monitor, sob demanda, criadas por código e não pelo `tauri.conf.json`: sem borda, transparentes, sem sombra, no topo, fora da barra de tarefas, cobrindo o monitor em pixels físicos; a capability usa `region-selector-*`). O backend passa a origem física do monitor na área de trabalho virtual e a escala dele pela query string (`region.html?ox=-1920&oy=0&s=1.25`; a origem pode ser negativa); a página converte px CSS locais em físicos (`x*s+ox`, `domain/rect.ts`: `org`, `phys`), então a `Region` devolvida está em pixels FÍSICOS na coordenada GLOBAL, com monitores de escalas diferentes. O retângulo desenha, move por dentro e redimensiona pelas 8 alças; setas movem 1 px, Shift 10 px, Alt+setas redimensionam; mínimo 16x16, preso ao monitor. Depois de desenhar, uma faixa junto da etiqueta de tamanho (badge informativa, sem borda nem hover) traz os botões **Gravar nesta área** (confirma) e **Cancelar**; Enter confirma e Esc cancela. Confirmar ou cancelar destrói TODAS as janelas do seletor. Ao pedir um novo seletor, janelas antigas com esses labels são destruídas antes (nunca falha por label duplicado); se a criação falhar, a causa real vai para o log (`error`) e o usuário recebe "Não foi possível abrir o seletor de área: <causa>". O seletor não é protegido da captura (só existe antes de gravar). Entradas Vite: `index.html` (toolbar), `webcam.html`, `region.html`.

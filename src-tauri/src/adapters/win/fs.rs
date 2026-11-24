@@ -4,18 +4,7 @@ use super::com::{init, log_err, take_pwstr};
 use cap_core::media::join_win;
 use cap_core::ports::Fs;
 use cap_core::{CapErr, Res};
-use windows::Win32::UI::Shell::{
-    FOLDERID_LocalAppData, FOLDERID_Videos, SHGetKnownFolderPath, KF_FLAG_DEFAULT,
-};
-
-/// Pasta `%LOCALAPPDATA%` (`None` se o shell não a informar).
-pub fn local_app_data() -> Option<String> {
-    init();
-    // SAFETY: devolve string alocada pelo COM, liberada em `take_pwstr`.
-    unsafe { SHGetKnownFolderPath(&FOLDERID_LocalAppData, KF_FLAG_DEFAULT, None) }
-        .ok()
-        .map(take_pwstr)
-}
+use windows::Win32::UI::Shell::{FOLDERID_Videos, SHGetKnownFolderPath, KF_FLAG_DEFAULT};
 
 /// Sistema de arquivos real.
 pub struct WinFs;

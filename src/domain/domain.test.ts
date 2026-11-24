@@ -5,7 +5,7 @@ import { pickCam } from './cam'
 import { detail, msg } from './err'
 import { fmtError, fmtReject, fmtVue } from './log'
 import { idle, isActive, isPaused } from './rec'
-import { big, cursor, HANDLES, hit, label, MIN, norm, phys, pin, resize, room, shift } from './rect'
+import { big, cursor, HANDLES, hit, label, MIN, norm, org, phys, pin, resize, room, shift } from './rect'
 import { BAR, barSize, EXTRA_H, fit, PILL } from './size'
 import { fmt } from './time'
 
@@ -85,6 +85,10 @@ describe('rect', () => {
   })
   it('converte para px físicos', () => {
     expect(phys({ x: 10, y: 5, w: 100, h: 50 }, 1.5, 100, 0)).toEqual({ x: 115, y: 8, w: 150, h: 75 })
+    // monitor à esquerda do principal (origem negativa) e escala própria
+    expect(phys({ x: 10, y: 5, w: 100, h: 50 }, 1.25, -1920, 0)).toEqual({ x: -1907, y: 6, w: 125, h: 63 })
+    // monitor 4K (escala 2) abaixo do principal
+    expect(phys({ x: 0, y: 0, w: 640, h: 360 }, 2, 0, 1080)).toEqual({ x: 0, y: 1080, w: 1280, h: 720 })
   })
   it('gera etiqueta', () => {
     expect(label({ x: 0, y: 0, w: 1280, h: 720 })).toBe('1280 × 720')
@@ -211,5 +215,19 @@ describe('barSize', () => {
     expect(barSize(false, false)).toEqual(BAR)
     expect(barSize(false, true)).toEqual({ w: BAR.w, h: BAR.h + EXTRA_H })
     expect(barSize(true, true)).toEqual(PILL)
+  })
+})
+
+describe('org (query string do seletor)', () => {
+  it('lê origem e escala, inclusive negativas e fracionárias', () => {
+    expect(org('?ox=-1920&oy=-200&s=1.25')).toEqual({ ox: -1920, oy: -200, s: 1.25 })
+    expect(org('?ox=0&oy=1080&s=2')).toEqual({ ox: 0, oy: 1080, s: 2 })
+  })
+  it('ausente, vazio, inválido ou escala não positiva vira o padrão', () => {
+    const d = { ox: 0, oy: 0, s: 1 }
+    expect(org('')).toEqual(d)
+    expect(org('?ox=&oy=abc&s=')).toEqual(d)
+    expect(org('?s=0')).toEqual(d)
+    expect(org('?s=-2')).toEqual(d)
   })
 })

@@ -22,7 +22,9 @@ pub trait Devs: Send + Sync {
 
 /// Captura de tela/áudio; alimenta o `Encoder` durante a gravação.
 pub trait Capture: Send + Sync {
-    fn start(&self, cfg: &RecCfg, sink: Arc<dyn Encoder>) -> Res<()>;
+    /// Inicia a captura. Devolve avisos em português (ex.: uma fonte de áudio que não abriu e
+    /// foi dispensada): a gravação segue, mas o usuário deve ser avisado.
+    fn start(&self, cfg: &RecCfg, sink: Arc<dyn Encoder>) -> Res<Vec<String>>;
     fn pause(&self) -> Res<()>;
     fn resume(&self) -> Res<()>;
     fn stop(&self) -> Res<()>;

@@ -110,8 +110,7 @@ fn place_toolbar(app: &AppHandle) {
         let y = wa.position.y + wa.size.height as i32 - s.height as i32 - gap;
         let _ = w.set_position(PhysicalPosition::new(x, y));
     }
-    // A barra não aparece na gravação (a webcam, que é outra janela, sim).
-    let _ = w.set_content_protected(true);
+    // A proteção de captura (barra fora do vídeo) só liga ao gravar: ver `TauriEvents::shield`.
 }
 
 /// Redimensiona a barra (px lógicos) mantendo o centro e a borda inferior.

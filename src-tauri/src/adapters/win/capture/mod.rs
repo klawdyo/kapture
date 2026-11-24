@@ -12,10 +12,10 @@ use crate::logging;
 use audio::Reader;
 use cap_core::domain::{Frame, RecCfg};
 use cap_core::media::{
-    audio_ts_ms, frames_due, has_audio, plan, Mixer, Timeline, SRC_MIC, SRC_SYS,
+    audio_ts_ms, audio_warn, frames_due, has_audio, plan, Mixer, Timeline, SRC_MIC, SRC_SYS,
 };
 use cap_core::ports::{Capture, Encoder, MicSink};
-use cap_core::Res;
+use cap_core::{CapErr, Res};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use video::Grab;
@@ -110,14 +110,43 @@ fn start_video(cfg: &RecCfg, clk: Clk, sink: Arc<dyn Encoder>) -> Res<Worker> {
 
 /// Inicia a thread de áudio: lê microfone e/ou loopback a cada 10 ms,
 /// mistura e entrega ao encoder o que o relógio da gravação pede.
-fn start_audio(cfg: &RecCfg, clk: Clk, sink: Arc<dyn Encoder>) -> Res<Worker> {
+///
+/// Uma fonte que não abre é dispensada (erro no log, aviso ao usuário) e a
+/// gravação segue com as outras; sem nenhuma fonte, não há thread de áudio.
+fn start_audio(cfg: &RecCfg, clk: Clk, sink: Arc<dyn Encoder>) -> (Option<Worker>, Vec<String>) {
     let (mic_id, sys) = (cfg.mic_id.clone().filter(|m| !m.is_empty()), cfg.sys);
-    Worker::start(
+    let warns = Arc::new(Mutex::new(Vec::<String>::new()));
+    let w = warns.clone();
+    let r = Worker::start(
         Duration::from_millis(10),
         move || {
+            let open = |src: usize, r: Res<Reader>| match r {
+                Ok(r) => Some(r),
+                Err(e) => {
+                    let nome = if src == SRC_MIC {
+                        "microfone"
+                    } else {
+                        "som do sistema"
+                    };
+                    logging::get().warn(&format!("áudio: {nome} dispensado: {e}"));
+                    lk(&w).push(audio_warn(src));
+                    None
+                }
+            };
+            let mic = mic_id
+                .as_deref()
+                .and_then(|id| open(SRC_MIC, Reader::mic(id)));
+            let sys = if sys {
+                open(SRC_SYS, Reader::system())
+            } else {
+                None
+            };
+            if mic.is_none() && sys.is_none() {
+                return Err(CapErr::from("Nenhuma fonte de áudio disponível."));
+            }
             Ok(Aud {
-                mic: mic_id.as_deref().map(Reader::mic).transpose()?,
-                sys: if sys { Some(Reader::system()?) } else { None },
+                mic,
+                sys,
                 mix: Mixer::new(),
                 emitted: 0,
                 buf: Vec::new(),
@@ -125,7 +154,7 @@ fn start_audio(cfg: &RecCfg, clk: Clk, sink: Arc<dyn Encoder>) -> Res<Worker> {
         },
         move |a: &mut Aud| {
             // Sempre drena as fontes (para não estourar o buffer do WASAPI).
-            for (src, r) in [(SRC_MIC, &a.mic), (SRC_SYS, &a.sys)] {
+            for (src, r) in [(SRC_MIC, &mut a.mic), (SRC_SYS, &mut a.sys)] {
                 if let Some(r) = r {
                     a.buf.clear();
                     r.read(&mut a.buf);
@@ -144,25 +173,42 @@ fn start_audio(cfg: &RecCfg, clk: Clk, sink: Arc<dyn Encoder>) -> Res<Worker> {
                 a.emitted += due;
             }
         },
-    )
+    );
+    let warns = std::mem::take(&mut *lk(&warns));
+    match r {
+        Ok(w) => (Some(w), warns),
+        Err(e) => {
+            logging::get().warn(&format!("áudio: gravação segue sem áudio: {e}"));
+            (None, warns)
+        }
+    }
 }
 
 impl Capture for WinCapture {
-    fn start(&self, cfg: &RecCfg, sink: Arc<dyn Encoder>) -> Res<()> {
+    fn start(&self, cfg: &RecCfg, sink: Arc<dyn Encoder>) -> Res<Vec<String>> {
         let mut g = lk(&self.sess);
         if g.is_some() {
             return Err("Já existe uma captura em andamento.".into());
         }
         let clk = Clk::new();
         let vid = start_video(cfg, clk.clone(), sink.clone())?;
-        let aud = if has_audio(cfg) {
-            // Se o áudio falhar, `vid` é solto aqui e a captura de tela para.
-            Some(start_audio(cfg, clk.clone(), sink)?)
+        logging::get().info("captura: vídeo iniciado");
+        // Falha de áudio não derruba o vídeo: vira aviso.
+        let (aud, warns) = if has_audio(cfg) {
+            start_audio(cfg, clk.clone(), sink)
         } else {
-            None
+            (None, Vec::new())
         };
+        logging::get().info(&format!(
+            "captura: áudio {}",
+            if aud.is_some() {
+                "iniciado"
+            } else {
+                "desligado"
+            }
+        ));
         *g = Some(Sess { clk, vid, aud });
-        Ok(())
+        Ok(warns)
     }
 
     fn pause(&self) -> Res<()> {

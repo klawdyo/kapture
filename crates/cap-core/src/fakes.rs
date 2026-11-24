@@ -88,6 +88,8 @@ impl Devs for FakeDevs {
 pub struct FakeCapture {
     pub calls: Calls,
     pub fail: Inject,
+    /// Avisos que `start` devolve (simula fontes de áudio dispensadas).
+    pub warns: Mutex<Vec<String>>,
     sink: Mutex<Option<Arc<dyn Encoder>>>,
     mic: Mutex<Option<MicSink>>,
 }
@@ -107,11 +109,11 @@ impl FakeCapture {
 }
 
 impl Capture for FakeCapture {
-    fn start(&self, cfg: &RecCfg, sink: Arc<dyn Encoder>) -> Res<()> {
+    fn start(&self, cfg: &RecCfg, sink: Arc<dyn Encoder>) -> Res<Vec<String>> {
         self.calls.log(format!("start:{}", cfg.fps));
         self.fail.check("start")?;
         *lk(&self.sink) = Some(sink);
-        Ok(())
+        Ok(lk(&self.warns).clone())
     }
     fn pause(&self) -> Res<()> {
         self.calls.log("pause");
@@ -455,7 +457,8 @@ mod tests {
         assert!(c.encoder().is_none());
         c.push_mic(&[1]); // sem sink: não faz nada
         let enc: Arc<dyn Encoder> = Arc::new(FakeEncoder::default());
-        c.start(&cfg(), enc).unwrap();
+        *lk(&c.warns) = vec!["aviso".to_string()];
+        assert_eq!(c.start(&cfg(), enc).unwrap(), vec!["aviso".to_string()]);
         assert!(c.encoder().is_some());
         c.pause().unwrap();
         c.resume().unwrap();

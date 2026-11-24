@@ -22,8 +22,7 @@
         "height": 136,
         "decorations": false,
         "transparent": true,
-        "shadow": true,
-        "windowEffects": { "effects": ["mica"] },
+        "shadow": false,
         "alwaysOnTop": true,
         "resizable": false,
         "maximizable": false,
@@ -47,20 +46,6 @@
         "skipTaskbar": true,
         "resizable": true,
         "visible": false,
-        "create": false
-      },
-      {
-        "label": "region-selector",
-        "dragDropEnabled": false,
-        "title": "Selecionar área",
-        "url": "region.html",
-        "fullscreen": true,
-        "decorations": false,
-        "transparent": true,
-        "shadow": false,
-        "alwaysOnTop": true,
-        "skipTaskbar": true,
-        "resizable": false,
         "create": false
       }
     ],

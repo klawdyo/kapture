@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { msg } from '../domain/err'
 import {
-  big, cursor, hit, label, norm, phys, pin, resize, room, shift, type Handle, type Hit, type Pt,
+  big, cursor, hit, label, norm, org as orgOf, phys, pin, resize, room, shift, type Handle, type Hit, type Pt,
 } from '../domain/rect'
 import type { Dim } from '../domain/size'
 import type { Region } from '../domain/types'
@@ -24,15 +24,17 @@ export function useRegion() {
   const from = ref<Pt>({ x: 0, y: 0 }) // ponto do mouse no início do gesto
   const over = ref<Hit>(null) // alvo sob o mouse (define o cursor)
   const err = ref('')
+  /** Monitor desta janela: origem física global e escala (a janela do seletor é uma por monitor). */
+  const mon = orgOf(window.location.search)
 
-  /** Limites da tela (a janela do seletor cobre o monitor inteiro). */
+  /** Limites da tela (a janela do seletor cobre o monitor inteiro dela). */
   const lim = (): Dim => ({ w: window.innerWidth, h: window.innerHeight })
 
   /** Retângulo em px CSS (zerado sem seleção). */
   const css = computed<Region>(() => rect.value ?? { x: 0, y: 0, w: 0, h: 0 })
   const ok = computed(() => big(css.value))
   /** Retângulo em px físicos, o que vai para o backend. */
-  const reg = computed(() => phys(css.value, window.devicePixelRatio, window.screenX, window.screenY))
+  const reg = computed(() => phys(css.value, mon.s, mon.ox, mon.oy))
   const drag = computed(() => mode.value !== null)
   const shown = computed(() => drag.value || ok.value)
   const tag = computed(() => label(reg.value))
@@ -79,6 +81,16 @@ export function useRegion() {
     }
   }
 
+  /** Botão "Gravar nesta área": confirma a seleção válida. */
+  function go(): void {
+    if (ok.value) void submit(reg.value)
+  }
+
+  /** Botão "Cancelar": devolve null, sem erro. */
+  function cancel(): void {
+    void submit(null)
+  }
+
   /** Setas movem 1 px (Shift: 10 px); Alt + setas redimensionam. */
   function nudge(e: KeyboardEvent): void {
     const a = ARROWS[e.key]
@@ -91,13 +103,13 @@ export function useRegion() {
 
   /** Enter confirma (se válida); Esc cancela; setas ajustam a seleção. */
   function key(e: KeyboardEvent): void {
-    if (e.key === 'Escape') void submit(null)
-    else if (e.key === 'Enter' && ok.value) void submit(reg.value)
+    if (e.key === 'Escape') cancel()
+    else if (e.key === 'Enter') go()
     else if (Object.hasOwn(ARROWS, e.key) && ok.value) nudge(e)
   }
 
   const init = (): void => window.addEventListener('keydown', key)
   const dispose = (): void => window.removeEventListener('keydown', key)
 
-  return { css, ok, shown, tag, err, cur, act, below, down, move, up, key, init, dispose }
+  return { css, ok, shown, tag, err, cur, act, below, down, move, up, go, cancel, key, init, dispose }
 }

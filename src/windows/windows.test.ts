@@ -125,6 +125,28 @@ describe('RegionSelector', () => {
   })
 })
 
+describe('RegionSelector: botões', () => {
+  it('Gravar nesta área confirma e Cancelar devolve null', async () => {
+    const w = mount(RegionSelector, { attachTo: document.body })
+    expect(w.find('.act').exists()).toBe(false)
+    await w.find('.ov').trigger('mousedown', { clientX: 10, clientY: 20 })
+    await w.find('.ov').trigger('mousemove', { clientX: 210, clientY: 120 })
+    await w.find('.ov').trigger('mouseup')
+    const [go, cancel] = w.findAll('.act')
+    expect(go.text()).toBe('Gravar nesta área')
+    expect(cancel.text()).toBe('Cancelar')
+    // a etiqueta é só informativa: não é botão
+    expect(w.find('.tag').element.tagName).toBe('DIV')
+    // clicar nos botões não começa um novo desenho
+    await go.trigger('mousedown', { clientX: 10, clientY: 20 })
+    await go.trigger('click')
+    await cancel.trigger('click')
+    await flushPromises()
+    expect(b.calls.map((c) => c[1])).toEqual([{ x: 10, y: 20, w: 200, h: 100 }, null])
+    w.unmount()
+  })
+})
+
 describe('ToolbarApp: atualização', () => {
   const rel = 'https://github.com/klawdyo/kapture/releases/tag/v0.2.0'
   const dot = 'button[aria-label="Atualização disponível"]'

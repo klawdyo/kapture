@@ -4,6 +4,7 @@ import { onBeforeUnmount, onMounted, reactive } from 'vue'
 import { useRegion } from '../composables/useRegion'
 import { HANDLES } from '../domain/rect'
 import Box from '../ui/Box.vue'
+import Btn from '../ui/Btn.vue'
 
 const r = reactive(useRegion())
 onMounted(r.init)
@@ -25,7 +26,12 @@ onBeforeUnmount(r.dispose)
       :style="{ left: r.css.x + 'px', top: r.css.y + 'px', width: r.css.w + 'px', height: r.css.h + 'px' }"
     >
       <Box v-for="h in HANDLES" :key="h" class="hh" :class="[h, h.length === 2 ? 'cn' : 'hd', { act: r.act === h }]" />
-      <Box class="tag" :class="{ in: !r.below }">{{ r.tag }}</Box>
+      <Box class="low" :class="{ in: !r.below }" @mousedown.stop>
+        <!-- Etiqueta informativa (só mostra o tamanho) e, ao lado, os botões de ação. -->
+        <Box class="tag">{{ r.tag }}</Box>
+        <Btn class="act go" @click="r.go()">Gravar nesta área</Btn>
+        <Btn class="act" @click="r.cancel()">Cancelar</Btn>
+      </Box>
     </Box>
     <Box v-if="r.err" class="err">{{ r.err }}</Box>
   </Box>
@@ -56,12 +62,22 @@ onBeforeUnmount(r.dispose)
 /* Alça em uso: vermelho vivo (indicador ativo da marca), para ficar claro qual lado está sendo ajustado. */
 .cn.act { border-color: var(--red); }
 .hd.act { background: var(--red); }
-.tag {
-  position: absolute; left: 50%; top: calc(100% + 12px); transform: translateX(-50%); padding: 3px 10px;
-  border-radius: 6px; background: #1e293b; color: #f1f5f9; font-size: 12px;
-  font-variant-numeric: tabular-nums; white-space: nowrap;
+/* Faixa abaixo do retângulo: etiqueta de tamanho e botões lado a lado. */
+.low {
+  position: absolute; left: 50%; top: calc(100% + 12px); transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px; white-space: nowrap; cursor: default;
 }
-/* Sem espaço abaixo (retângulo na borda da tela): a etiqueta entra pelo lado de dentro. */
-.tag.in { top: auto; bottom: 12px; }
+/* Sem espaço abaixo (retângulo na borda da tela): a faixa entra pelo lado de dentro. */
+.low.in { top: auto; bottom: 12px; }
+/* Etiqueta informativa: chapada, sem borda nem hover, para não parecer botão. */
+.tag {
+  padding: 3px 10px; border-radius: 6px; background: #1e293b; color: #f1f5f9; font-size: 12px;
+  font-variant-numeric: tabular-nums; pointer-events: none;
+}
+/* Botões de ação: borda clara, fundo mais claro que a etiqueta e hover (o Btn genérico traz o resto). */
+.act { height: 30px; padding: 0 14px; border: 1px solid rgba(255, 255, 255, 0.35); background: #334155; color: #f8fafc; font-size: 12.5px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
+.act:hover { background: #475569; }
+.act.go { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+.act.go:hover { background: var(--red2); }
 .err { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 4px 10px; border-radius: 6px; background: #1e293b; color: #fca5a5; }
 </style>
