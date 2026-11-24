@@ -79,6 +79,16 @@ export function useRegion() {
     }
   }
 
+  /** Botão "Gravar nesta área": confirma a seleção válida. */
+  function go(): void {
+    if (ok.value) void submit(reg.value)
+  }
+
+  /** Botão "Cancelar": devolve null, sem erro. */
+  function cancel(): void {
+    void submit(null)
+  }
+
   /** Setas movem 1 px (Shift: 10 px); Alt + setas redimensionam. */
   function nudge(e: KeyboardEvent): void {
     const a = ARROWS[e.key]
@@ -91,13 +101,13 @@ export function useRegion() {
 
   /** Enter confirma (se válida); Esc cancela; setas ajustam a seleção. */
   function key(e: KeyboardEvent): void {
-    if (e.key === 'Escape') void submit(null)
-    else if (e.key === 'Enter' && ok.value) void submit(reg.value)
+    if (e.key === 'Escape') cancel()
+    else if (e.key === 'Enter') go()
     else if (Object.hasOwn(ARROWS, e.key) && ok.value) nudge(e)
   }
 
   const init = (): void => window.addEventListener('keydown', key)
   const dispose = (): void => window.removeEventListener('keydown', key)
 
-  return { css, ok, shown, tag, err, cur, act, below, down, move, up, key, init, dispose }
+  return { css, ok, shown, tag, err, cur, act, below, down, move, up, go, cancel, key, init, dispose }
 }

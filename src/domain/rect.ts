@@ -107,5 +107,5 @@ export function resize(r: Region, h: Handle, dx: number, dy: number, b: Dim): Re
 
 /** Sobra espaço abaixo do retângulo para a etiqueta? */
 export function room(r: Region, b: Dim): boolean {
-  return r.y + r.h + 44 <= b.h
+  return r.y + r.h + 56 <= b.h
 }
