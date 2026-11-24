@@ -1,6 +1,6 @@
 //! Adaptador `Events`: publica eventos para as janelas via Tauri.
 
-use cap_core::domain::RecState;
+use cap_core::domain::{RecState, UpdState};
 use cap_core::ports::Events;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
@@ -11,7 +11,7 @@ struct Level {
     level: f32,
 }
 
-/// Emite `mic-level` e `rec-state` para todas as janelas.
+/// Emite `mic-level`, `rec-state` e `update-state` para todas as janelas.
 pub struct TauriEvents {
     app: AppHandle,
 }
@@ -30,5 +30,9 @@ impl Events for TauriEvents {
 
     fn rec_state(&self, st: &RecState) {
         let _ = self.app.emit("rec-state", *st);
+    }
+
+    fn update_state(&self, st: &UpdState) {
+        let _ = self.app.emit("update-state", st);
     }
 }

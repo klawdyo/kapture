@@ -1,6 +1,20 @@
 // Regras puras da verificação de atualização (sem rede nem Tauri).
 import type { Upd } from './types'
 
+/** Fase do aviso de atualização na interface. */
+export type Phase = 'idle' | 'checking' | 'downloading' | 'ready' | 'available'
+
+/** Texto do status por fase; `pct` (0..100) aparece só durante o download e quando maior que zero. */
+export function updText(phase: Phase, pct = 0): string {
+  switch (phase) {
+    case 'checking': return 'Verificando atualizações…'
+    case 'downloading': return pct > 0 ? `Atualizando… ${Math.round(pct)}%` : 'Atualizando…'
+    case 'ready': return 'Reinicie para atualizar'
+    case 'available': return 'Atualização disponível'
+    default: return ''
+  }
+}
+
 /** Prefixo das únicas páginas de release aceitas (igual ao backend). */
 export const REL_URL = 'https://github.com/klawdyo/kapture/releases/'
 

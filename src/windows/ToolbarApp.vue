@@ -5,7 +5,7 @@ import DevSelect from '../components/DevSelect.vue'
 import ModeSwitch from '../components/ModeSwitch.vue'
 import RecBtn from '../components/RecBtn.vue'
 import TitleBar from '../components/TitleBar.vue'
-import UpdateDot from '../components/UpdateDot.vue'
+import UpdateStatus from '../components/UpdateStatus.vue'
 import VuMeter from '../components/VuMeter.vue'
 import { useToolbar } from '../composables/useToolbar'
 import { useUpdate } from '../composables/useUpdate'
@@ -17,12 +17,15 @@ import Select from '../ui/Select.vue'
 
 const t = reactive(useToolbar())
 const u = reactive(useUpdate())
-// Ao abrir a janela: inicia a barra e consulta atualizações uma única vez.
+// Ao abrir a janela: inicia a barra e o ciclo de atualização (uma única vez).
 onMounted(() => {
   void t.init()
   void u.init()
 })
-onBeforeUnmount(t.dispose)
+onBeforeUnmount(() => {
+  t.dispose()
+  u.dispose()
+})
 </script>
 
 <template>
@@ -31,9 +34,7 @@ onBeforeUnmount(t.dispose)
     <template v-if="t.active">
       <Box class="dot" :class="{ off: t.paused }" data-tauri-drag-region />
       <Box tag="span" class="clock" data-tauri-drag-region>{{ t.clock }}</Box>
-      <Box v-if="t.err" tag="span" class="err" :title="t.err">{{ t.err }}</Box>
-      <Box class="fill" data-tauri-drag-region />
-      <Btn class="pz" round :icon="t.paused ? 'play' : 'pause'" :title="t.paused ? 'Retomar' : 'Pausar'" @click="t.pause()" />
+      <Box v-if="t.err" tag="span" class="err" :title="t.err" data-tauri-drag-region>{{ t.err }}</Box>
       <RecBtn :rec="true" @click="t.toggle()" />
     </template>
     <template v-else>
@@ -41,7 +42,7 @@ onBeforeUnmount(t.dispose)
         <Box v-if="t.err" tag="span" class="err" :title="t.err" data-tauri-drag-region>{{ t.err }}</Box>
         <Box v-else-if="t.saved" tag="span" class="ok" :title="t.saved" data-tauri-drag-region>Salvo</Box>
         <template #end>
-          <UpdateDot v-if="u.upd" :upd="u.upd" :cur="u.cur" :open="u.open" @toggle="u.toggle()" @download="u.download()" @later="u.later()" />
+          <UpdateStatus :phase="u.phase" :text="u.text" :upd="u.upd" :cur="u.cur" :open="u.open" @apply="u.apply()" @toggle="u.toggle()" @download="u.download()" @later="u.later()" />
         </template>
       </TitleBar>
       <Box class="row" data-tauri-drag-region>
@@ -88,13 +89,16 @@ onBeforeUnmount(t.dispose)
 .fps { width: 96px; }
 .extra :deep(.btn) { border: 1px solid rgba(255, 255, 255, 0.1); background: var(--fld); color: var(--fg); height: 30px; }
 .extra :deep(.btn.on) { background: rgba(34, 197, 94, 0.22); border-color: rgba(34, 197, 94, 0.6); }
-.pill { flex-direction: row; align-items: center; gap: 10px; padding: 0 10px 0 16px; border-radius: 28px; }
+/* Pílula justa ao conteúdo; semitransparente em repouso para não atrapalhar o que há embaixo. */
+.pill {
+  flex-direction: row; align-items: center; gap: 8px; padding: 0 7px 0 16px; border-radius: 24px;
+  background: rgba(26, 33, 48, 0.96); opacity: 0.72; transition: opacity 0.15s;
+}
+.pill:hover, .pill:focus-within { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .pill { transition: none; } .dot { animation: none; } }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); animation: blink 1.2s infinite; }
 .dot.off { animation: none; background: var(--mut); }
-.clock { min-width: 48px; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 15px; }
-.fill { flex: 1; align-self: stretch; }
-.pz { background: rgba(255, 255, 255, 0.16); color: var(--fg); }
-.pz:hover { background: rgba(255, 255, 255, 0.26); }
+.clock { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 16px; }
 .err { color: #fca5a5; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .ok { color: #86efac; font-size: 12px; }
 @keyframes blink { 50% { opacity: 0.3; } }

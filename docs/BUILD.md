@@ -32,7 +32,16 @@ Em tempo de execução o app grava `%LOCALAPPDATA%\kapture\logs\kapture.log` (fa
 
 ## Atualizações
 
-A verificação é feita no frontend (`ports/real.ts`, `realUpdates`): um `fetch` GET a `https://api.github.com/repos/klawdyo/kapture/releases/latest` ao abrir a toolbar, com timeout de 5 s. A CSP de `tauri.conf.json` libera só `connect-src https://api.github.com` além do que já existia. A versão instalada vem de `getVersion()` (permissão `core:app:allow-version`), então vale o `version` do `tauri.conf.json`; o release precisa ter tag `vX.Y.Z` maior que ela e não pode ser rascunho nem prerelease. O botão **Baixar** chama o comando `open_url`, que só abre `https://github.com/klawdyo/kapture/releases/*` (ShellExecuteW, sem plugin novo). Nenhum dado do usuário é enviado e não há opção de desativar.
+Duas camadas, escolhidas em tempo de execução:
+
+1. **Automática (Velopack).** Ao abrir a toolbar o frontend chama `update_start`; o caso de uso `Update` (cap-core, `app/upd.rs`) roda o ciclo uma única vez numa thread: consulta, baixa sozinho e publica o evento `update-state` (`checking`, `downloading` com `pct`, `ready`, `none`, `fallback`, `err`). `update_apply` reinicia aplicando a versão baixada. O adaptador real é `src-tauri/src/adapters/win/updater.rs` (`VpkUpdater`, único lugar que usa o crate `velopack`), com `HttpSource` apontando para `https://github.com/klawdyo/kapture/releases/latest/download/`: o GitHub redireciona para os assets do Release mais recente, onde o `release.yml` anexa `releases.win.json` e os `.nupkg` (por isso esses arquivos precisam continuar no Release e o Release não pode ser prerelease). Só funciona com o app instalado pelo Setup do Velopack (`UpdateManager::new` falha fora dele).
+2. **Fallback (aviso simples).** Se o app não está instalado pelo Velopack (exe solto, MSI, desenvolvimento, ou fora do Windows) o backend emite `fallback` e o frontend faz o que já existia: `realUpdates` (`ports/real.ts`) com um `fetch` GET a `https://api.github.com/repos/klawdyo/kapture/releases/latest`, timeout de 5 s, e mostra "Atualização disponível" com **Baixar** (comando `open_url`, que só abre `https://github.com/klawdyo/kapture/releases/*`) e **Depois**.
+
+A CSP de `tauri.conf.json` libera só `connect-src https://api.github.com` (o fallback); o Velopack faz as requisições pelo Rust, fora da CSP. A versão instalada vem de `getVersion()` (permissão `core:app:allow-version`); o release precisa ter tag `vX.Y.Z` maior que ela. Nenhum dado do usuário é enviado e não há opção de desativar.
+
+**Trocar o Velopack:** basta outro tipo que implemente `cap_core::ports::Updater` (`supported`, `check`, `download` com progresso, `apply_and_restart`) e trocar a linha `updater:` em `plat()` de `src-tauri/src/lib.rs`. Núcleo, comandos e interface não mudam. O `FakeUpdater` cobre os testes e é o adaptador fora do Windows (com `supported = false`, que ativa o fallback).
+
+**Validação no Linux:** o crate `ring` (via `velopack`) precisa do MSVC. Para só checar o código do alvo Windows sem as ferramentas, aponte `CC_x86_64_pc_windows_msvc` e `AR_x86_64_pc_windows_msvc` para um script que apenas cria os arquivos de saída e rode `cargo clippy -p cap --all-targets --target x86_64-pc-windows-msvc -- -D warnings`. No CI (Windows) o build é o real.
 
 ## Instalador Velopack (Setup.exe)
 

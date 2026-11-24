@@ -1,6 +1,6 @@
 // Implementação FAKE das portas, para testes (sem Tauri nem câmera).
 import { pickCam, type VideoDev } from '../domain/cam'
-import type { Devices, RecCfg, RecState, Region, Targets, Upd } from '../domain/types'
+import type { Devices, RecCfg, RecState, Region, Targets, Upd, UpdSt } from '../domain/types'
 import type { Backend, LogLvl, Media, Off, Updates } from './types'
 
 /** Assinaturas de evento suportadas. */
@@ -9,6 +9,7 @@ interface Ev {
   state: (s: RecState) => void
   hotkey: () => void
   resize: (w: number, h: number) => void
+  upd: (s: UpdSt) => void
 }
 
 export class FakeBackend implements Backend {
@@ -24,7 +25,7 @@ export class FakeBackend implements Backend {
   ver = '0.1.0'
   st: RecState = { state: 'idle', secs: 0 }
   private ls: { [K in keyof Ev]: Set<Ev[K]> } = {
-    mic: new Set(), state: new Set(), hotkey: new Set(), resize: new Set(),
+    mic: new Set(), state: new Set(), hotkey: new Set(), resize: new Set(), upd: new Set(),
   }
 
   /** Registra a chamada e simula falha quando pedido. */
@@ -64,12 +65,15 @@ export class FakeBackend implements Backend {
   async openLogs() { await this.c('openLogs') }
   async version() { await this.c('version'); return this.ver }
   async openUrl(url: string) { await this.c('openUrl', url) }
+  async updateStart() { await this.c('updateStart') }
+  async updateApply() { await this.c('updateApply') }
   async minimize() { await this.c('minimize') }
   async close() { await this.c('close') }
   async fitBar(w: number, h: number) { await this.c('fitBar', { w, h }) }
   async fitSquare(size: number) { await this.c('fitSquare', size) }
   onMic(cb: (l: number) => void) { return this.on('mic', cb) }
   onState(cb: (s: RecState) => void) { return this.on('state', cb) }
+  onUpdate(cb: (s: UpdSt) => void) { return this.on('upd', cb) }
   onHotkey(cb: () => void) { return this.on('hotkey', cb) }
   onResize(cb: (w: number, h: number) => void) { return this.on('resize', cb) }
 }

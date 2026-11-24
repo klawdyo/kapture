@@ -1,5 +1,8 @@
 # Contrato de arquitetura do kapture (fonte única de verdade)
 
+> **Visual:** a fonte de verdade do design atual está em [`docs/design/`](design/README.md). O PDF original e `docs/ui-reference.png` são históricos e não devem ser usados como modelo de interface.
+
+
 ## Princípios
 - Comentários e textos de UI em português; identificadores em inglês, nomes curtos (`price`, não `salePrice`).
 - Clean Architecture: domínio e casos de uso não conhecem Tauri nem Windows.
@@ -42,6 +45,8 @@ packaging/msix/             # AppxManifest + script MakeAppx
 | log_ui | `{lvl:"debug"\|"info"\|"warn"\|"error", msg:string}` | void (grava `[ui] msg` no log em disco; `lvl` desconhecido vira `info`) |
 | open_logs | - | void (abre a pasta de logs no Explorer; erro em português se não abrir) |
 | open_url | `{url:string}` | void (abre no navegador padrão via ShellExecuteW; SÓ aceita `https://github.com/klawdyo/kapture/releases/*` sem espaços, aspas, `\` nem `..`; outra URL devolve "Endereço não permitido."; porta `Opener`, caso de uso `UrlOpen`) |
+| update_start | - | void (retorna na hora; inicia numa thread o ciclo de atualização, UMA vez por execução: porta `Updater`, caso de uso `Update`; o progresso chega pelo evento `update-state`; chamadas seguintes só reemitem o estado atual) |
+| update_apply | - | void (só com o estado `ready`; encerra o app, aplica a versão baixada e reabre; sem versão pronta devolve "Nenhuma atualização pronta para aplicar.") |
 | fit_toolbar | w,h (px lógicos) | void (redimensiona a janela `toolbar` mantendo centro e base; `Backend.fitBar`) |
 Erros: string em português.
 
@@ -74,20 +79,24 @@ Porta `Log` (`ports.rs`: `write(lvl, msg)` mais `debug/info/warn/error`), nunca 
 - Minimizar e fechar usam a API de janela (`Backend.minimize`/`close`, permissões `core:window:allow-minimize`/`allow-close`); fechar a `toolbar` encerra o app.
 - A toolbar tem, na linha extra (engrenagem), o botão "Abrir logs" (`Backend.openLogs` -> `open_logs`).
 
-## Atualizações (frontend)
-Sem evento novo. Ao montar a toolbar, `useUpdate.init` roda uma vez: `Backend.version()` (`getVersion()` do Tauri) e `Updates.check(current)`
-(porta nova em `ports/types.ts`, REAL `realUpdates` com `fetch` GET e timeout de 5 s a `https://api.github.com/repos/klawdyo/kapture/releases/latest`,
-FAKE `FakeUpdates`) devolvem `{version, url}` ou `null`. Regras puras em `domain/upd.ts` (testadas): semver X.Y.Z ignorando o prefixo `v`,
-prerelease e rascunho ignorados, escolha da mais nova, resposta com `tag_name` e `html_url` e `html_url` começando em `https://github.com/klawdyo/kapture/releases/`.
-- Há atualização: `UpdateDot` (compõe `ui/Dot` e `ui/Pop`) mostra uma bolinha vermelha piscando na barra de título (estática com `prefers-reduced-motion`,
-  `aria-label` "Atualização disponível", foco visível). Clique abre a mensagem com versão instalada e nova e os botões **Baixar** (`Backend.openUrl` -> `open_url`) e **Depois**
-  (fecha; a bolinha continua). Nada disso aparece no modo compacto de gravação.
-- Sem atualização ou falha de rede: nada na tela; `Backend.logUi` registra `[update] atualização disponível vX`, `[update] sem atualização` (info)
-  ou `[update] falha ao verificar: ...` (warn). No máximo 1 requisição por abertura da janela.
-- CSP: `connect-src 'self' ipc: http://ipc.localhost https://api.github.com`. Capability `core:app:allow-version`.
+## Atualizações
+Porta `Updater` (cap-core): `supported()`, `check() -> Option<UpdInfo{version}>`, `download(progress 0..=100)`, `apply_and_restart()`. Adaptador real: Velopack em `src-tauri/src/adapters/win/updater.rs`
+(`HttpSource` em `https://github.com/klawdyo/kapture/releases/latest/download/`); fora do Windows, `FakeUpdater` com `supported=false`. O caso de uso `Update` (máquina de estados pura) roda o ciclo uma vez e emite `update-state`:
+`{kind:'idle'|'checking'|'none'|'fallback'|'err'}`, `{kind:'downloading', pct:0..100}`, `{kind:'ready', version}`. `fallback` = app não instalado pelo Velopack; `err` = falha de rede/feed/download (só vai ao log em disco como warn).
+
+Frontend: `Backend.updateStart()` (`update_start`), `Backend.updateApply()` (`update_apply`) e `Backend.onUpdate(cb)` (`update-state`), reais e FAKE. `useUpdate.init` busca `version()`, assina `onUpdate` e chama `updateStart`
+(uma vez ao montar a toolbar). Fase (`Phase`): `idle`, `checking`, `downloading`, `ready`, `available`. Textos exatos (`updText` em `domain/upd.ts`): "Verificando atualizações…", "Atualizando…" (com " 42%" quando `pct > 0`),
+"Reinicie para atualizar", "Atualização disponível".
+- `UpdateStatus` (components; compõe `ui/Txt`, `ui/TxtBtn`, `ui/Dot` e `UpdateDot`) fica na barra de título, antes de minimizar/fechar: texto fino cinza 11 px sem negrito, em região `role="status"` `aria-live="polite"`, sem empurrar o layout e sem atrapalhar o arrasto.
+  `ready`: botão (foco visível) com bolinha vermelha piscando e o texto; o clique chama `update_apply`. Nada aparece no modo compacto de gravação.
+- Sem atualização (`none`) ou erro (`err`): o texto some; `[update] ...` no log em disco.
+- Fallback (`fallback`, ou se o comando falhar): `useUpdate` consulta `Updates.check(current)` (REAL `realUpdates`: `fetch` GET com timeout de 5 s a `https://api.github.com/repos/klawdyo/kapture/releases/latest`; FAKE `FakeUpdates`),
+  mostra "Atualização disponível" e `UpdateDot` (compõe `ui/Dot` e `ui/Pop`) com a mensagem de versões instalada e nova e **Baixar** (`Backend.openUrl` -> `open_url`) e **Depois**. Regras puras em `domain/upd.ts`: semver X.Y.Z ignorando o prefixo `v`,
+  prerelease e rascunho ignorados, escolha da mais nova, `html_url` começando em `https://github.com/klawdyo/kapture/releases/`. Bolinha estática com `prefers-reduced-motion`.
+- CSP: `connect-src 'self' ipc: http://ipc.localhost https://api.github.com`. Capability `core:app:allow-version`. Velopack faz as requisições pelo Rust.
 
 ## Eventos (emit)
-`mic-level` `{level:number 0..1}` | `rec-state` RecState | `hotkey` (Ctrl+Shift+R alterna gravação)
+`mic-level` `{level:number 0..1}` | `rec-state` RecState | `update-state` UpdState (ver Atualizações) | `hotkey` (Ctrl+Shift+R alterna gravação)
 
 ## Janelas
-`toolbar` (painel 720x136 px, cantos arredondados, sem moldura, transparente com `windowEffects` mica e fundo semi-opaco por CSS como fallback, centralizada na base da área de trabalho; cresce +48 px com a linha extra de alvo/configurações e vira pílula 260x56 gravando, via `fit_toolbar`), `webcam` (quadrada 1:1, transparente, topo, arrastável/redimensionável), `region-selector` (fullscreen, sob demanda). Entradas Vite: `index.html` (toolbar), `webcam.html`, `region.html`.
+`toolbar` (painel 720x136 px, cantos arredondados, sem moldura, transparente com `windowEffects` mica e fundo semi-opaco por CSS como fallback, centralizada na base da área de trabalho; cresce +48 px com a linha extra de alvo/configurações e vira pílula 150x48 gravando, via `fit_toolbar`), na pílula só há ponto indicador, cronômetro e Parar (sem botão de pausa na UI; `pause_rec`/`resume_rec` seguem no backend), semitransparente (opacity .72, 1 em hover/foco) e arrastável; `webcam` (quadrada 1:1, transparente, topo, arrastável/redimensionável), `region-selector` (fullscreen, sob demanda; o retângulo desenha, move por dentro e redimensiona pelas 8 alças; setas movem 1 px, Shift 10 px, Alt+setas redimensionam; mínimo 16x16, preso à tela; Enter confirma, Esc cancela). Entradas Vite: `index.html` (toolbar), `webcam.html`, `region.html`.

@@ -15,5 +15,5 @@ const OPTS: UiOpt[] = [
 </script>
 
 <template>
-  <Segmented :model-value="modelValue" :options="OPTS" @update:model-value="emit('update:modelValue', $event as Mode)" />
+  <Segmented data-tauri-drag-region :model-value="modelValue" :options="OPTS" @update:model-value="emit('update:modelValue', $event as Mode)" />
 </template>

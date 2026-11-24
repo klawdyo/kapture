@@ -6,5 +6,5 @@ defineProps<{ value: number }>()
 </script>
 
 <template>
-  <Meter :value="value" :segs="8" :hot="0.85" />
+  <Meter data-tauri-drag-region :value="value" :segs="8" :hot="0.85" />
 </template>

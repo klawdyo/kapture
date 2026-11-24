@@ -1,10 +1,15 @@
-<!-- Bolinha genérica clicável: cor e piscar configuráveis; foco visível. -->
+<!-- Bolinha genérica: clicável (botão com foco visível) ou, com `inert`, só decorativa dentro de outro botão. Cor e piscar configuráveis. -->
 <script setup lang="ts">
-withDefaults(defineProps<{ label: string; blink?: boolean; size?: number; expanded?: boolean }>(), { size: 10 })
+withDefaults(
+  defineProps<{ label?: string; blink?: boolean; size?: number; expanded?: boolean; inert?: boolean }>(),
+  { label: '', size: 10 },
+)
 </script>
 
 <template>
+  <span v-if="inert" class="dot inert" :class="{ blink }" aria-hidden="true" :style="{ '--sz': `${size}px` }"><i /></span>
   <button
+    v-else
     class="dot"
     :class="{ blink }"
     type="button"
@@ -25,6 +30,9 @@ withDefaults(defineProps<{ label: string; blink?: boolean; size?: number; expand
 }
 .dot i { display: block; width: var(--sz); height: var(--sz); border-radius: 50%; background: currentColor; }
 .dot:hover { background: var(--hov); }
+/* Decorativa: tamanho do desenho, sem área de clique própria. */
+.dot.inert { width: var(--sz); height: var(--sz); cursor: inherit; }
+.dot.inert:hover { background: transparent; }
 .dot:focus-visible { outline: 2px solid #93c5fd; outline-offset: 1px; }
 .dot.blink i { animation: dot-blink 1.1s ease-in-out infinite; }
 @keyframes dot-blink { 50% { opacity: 0.25; } }

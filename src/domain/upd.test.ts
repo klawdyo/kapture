@@ -1,6 +1,6 @@
 // Testes da lógica pura de atualização.
 import { describe, expect, it } from 'vitest'
-import { bare, cmpVer, okUrl, parseRel, parseVer, pickNew, REL_URL } from './upd'
+import { bare, cmpVer, okUrl, parseRel, parseVer, pickNew, REL_URL, updText } from './upd'
 
 const url = `${REL_URL}tag/v1.2.3`
 
@@ -66,5 +66,17 @@ describe('pickNew', () => {
     expect(pickNew('0.2.0', [])).toBeNull()
     expect(pickNew('dev', [u('9.0.0')])).toBeNull()
     expect(pickNew('0.1.0', [{ version: 'x', url: '' }])).toBeNull()
+  })
+})
+
+describe('updText', () => {
+  it('textos por fase, com percentual só no download', () => {
+    expect(updText('idle')).toBe('')
+    expect(updText('checking')).toBe('Verificando atualizações…')
+    expect(updText('downloading')).toBe('Atualizando…')
+    expect(updText('downloading', 0)).toBe('Atualizando…')
+    expect(updText('downloading', 41.6)).toBe('Atualizando… 42%')
+    expect(updText('ready', 90)).toBe('Reinicie para atualizar')
+    expect(updText('available')).toBe('Atualização disponível')
   })
 })

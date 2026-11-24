@@ -16,10 +16,10 @@ const opts = computed(() => [
 </script>
 
 <template>
-  <div class="dev">
-    <div class="hd">
+  <div class="dev" data-tauri-drag-region>
+    <div class="hd" data-tauri-drag-region>
       <Icon :name="icon" :size="20" />
-      <span class="lb">{{ label }}</span>
+      <span class="lb" data-tauri-drag-region>{{ label }}</span>
       <slot />
     </div>
     <Select :model-value="modelValue" :options="opts" :title="none" @update:model-value="emit('update:modelValue', $event)" />
@@ -29,6 +29,6 @@ const opts = computed(() => [
 <style scoped>
 .dev { display: flex; flex-direction: column; gap: 7px; flex: 1 1 0; min-width: 0; }
 .hd { display: flex; align-items: center; gap: 8px; height: 22px; color: var(--fg); }
-.hd svg { flex: none; }
+.hd svg { flex: none; pointer-events: none; } /* o clique cai no pai (arrastável) */
 .lb { font-weight: 600; font-size: 13px; }
 </style>

@@ -1,4 +1,4 @@
-<!-- Gravar (anel vermelho + rótulo) ou, durante a gravação, Parar (círculo pequeno). -->
+<!-- Gravar (anel vermelho + rótulo) ou, durante a gravação, Parar (quadrado arredondado). -->
 <script setup lang="ts">
 import Btn from '../ui/Btn.vue'
 
@@ -6,7 +6,7 @@ defineProps<{ rec: boolean }>()
 </script>
 
 <template>
-  <Btn v-if="rec" kind="rec" round icon="stop" :size="16" title="Parar" />
+  <Btn v-if="rec" kind="rec" round icon="stop" :size="24" title="Parar" />
   <Btn v-else col class="go" title="Gravar">
     <span class="ring"><span class="core" /></span>
     <span class="lb"><i />Gravar</span>

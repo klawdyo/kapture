@@ -43,7 +43,13 @@ Para abrir a pasta, clique na engrenagem da barra e depois em **Abrir logs**. Se
 
 ## Atualizações
 
-Ao abrir, o kapture consulta uma única vez a página de Releases do GitHub (`api.github.com/repos/klawdyo/kapture/releases/latest`) para saber se existe versão mais nova. A consulta é um GET simples, sem enviar nenhum dado seu, com limite de 5 segundos. Se houver atualização, uma bolinha vermelha piscando aparece na barra de título; ao clicar, o app mostra as versões instalada e nova, com os botões **Baixar** (abre a página do release no navegador) e **Depois**. Sem atualização ou sem internet, nada aparece (o resultado só vai para o log). Com a opção de movimento reduzido do Windows ligada, a bolinha fica parada. O app não baixa nem instala nada sozinho. Não há opção para desativar a consulta; para bloquear, negue a conexão do app a `api.github.com` no firewall.
+Ao abrir, o kapture procura uma versão nova sozinho. Na barra de título aparece, em cinza e letra pequena, **Verificando atualizações…**. Se houver versão nova, ela é baixada automaticamente (**Atualizando… 42%**) e, ao terminar, surge uma bolinha vermelha piscando com **Reinicie para atualizar**: um clique reinicia o app já na versão nova. Se não houver atualização ou faltar internet, o texto some sem aviso (o motivo só vai para o log). Nada disso aparece durante a gravação. Com a opção de movimento reduzido do Windows ligada, a bolinha fica parada.
+
+Isso só funciona quando o app foi instalado pelo **Setup do Velopack** (`kapture-win-Setup.exe`). Rodando solto, pelo MSI ou em desenvolvimento, o app só avisa: aparece **Atualização disponível** com a bolinha, e o clique mostra as versões instalada e nova com os botões **Baixar** (abre a página do release no navegador) e **Depois**.
+
+O que é enviado: apenas as requisições comuns ao GitHub (`github.com/klawdyo/kapture/releases/latest/download/` para o índice e o pacote, ou `api.github.com/repos/klawdyo/kapture/releases/latest` no aviso simples), sem enviar nenhum dado seu além do que toda requisição HTTPS carrega. A consulta é feita uma vez por abertura. Não há opção para desativar; para bloquear, negue a conexão do app a `github.com` e `api.github.com` no firewall.
+
+O mecanismo de atualização (Velopack) fica atrás da porta `Updater` do núcleo, então pode ser trocado por outro sem mexer na interface.
 
 ## Desenvolvimento
 

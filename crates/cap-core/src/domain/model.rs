@@ -103,6 +103,28 @@ impl RecState {
     }
 }
 
+/// Atualização encontrada pelo `Updater`: só a versão (sem 'v').
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UpdInfo {
+    pub version: String,
+}
+
+/// Estado do ciclo de atualização, emitido como `update-state`.
+///
+/// `Fallback` quer dizer que o app não foi instalado pelo instalador com
+/// atualização automática: a interface cai no aviso por consulta ao GitHub.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum UpdState {
+    Idle,
+    Checking,
+    None,
+    Downloading { pct: u8 },
+    Ready { version: String },
+    Fallback,
+    Err,
+}
+
 /// Quadro de vídeo bruto (BGRA) entregue pela captura ao encoder.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Frame {
@@ -181,6 +203,33 @@ mod tests {
             json!({"state":"idle","secs":0})
         );
         assert_eq!(serde_json::to_string(&St::Rec).unwrap(), "\"rec\"");
+    }
+
+    #[test]
+    fn estados_de_atualizacao() {
+        let j = |s: UpdState| serde_json::to_value(s).unwrap();
+        assert_eq!(j(UpdState::Checking), json!({"kind":"checking"}));
+        assert_eq!(
+            j(UpdState::Downloading { pct: 42 }),
+            json!({"kind":"downloading","pct":42})
+        );
+        assert_eq!(
+            j(UpdState::Ready {
+                version: "1.2.3".into()
+            }),
+            json!({"kind":"ready","version":"1.2.3"})
+        );
+        assert_eq!(j(UpdState::Fallback), json!({"kind":"fallback"}));
+        let back: UpdState = serde_json::from_value(json!({"kind":"none"})).unwrap();
+        assert_eq!(back, UpdState::None);
+        assert_eq!(
+            UpdInfo {
+                version: "1".into()
+            }
+            .clone()
+            .version,
+            "1"
+        );
     }
 
     #[test]

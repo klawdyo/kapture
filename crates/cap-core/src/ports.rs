@@ -2,7 +2,7 @@
 //!
 //! Atenção: `Targets` aqui é a porta; o tipo de dados é `domain::Targets`.
 
-use crate::domain::{Devices, Frame, RecCfg, RecState, Region, Stamp};
+use crate::domain::{Devices, Frame, RecCfg, RecState, Region, Stamp, UpdInfo, UpdState};
 use crate::log::Lvl;
 use crate::Res;
 use std::sync::Arc;
@@ -76,6 +76,19 @@ pub trait Opener: Send + Sync {
 pub trait Events: Send + Sync {
     fn mic_level(&self, level: f32);
     fn rec_state(&self, st: &RecState);
+    fn update_state(&self, st: &UpdState);
+}
+
+/// Atualização automática do app (hoje Velopack; trocável por outro adaptador).
+pub trait Updater: Send + Sync {
+    /// O app foi instalado de um jeito que permite atualizar sozinho?
+    fn supported(&self) -> bool;
+    /// Consulta o feed: `Some` se há versão mais nova, `None` se está em dia.
+    fn check(&self) -> Res<Option<UpdInfo>>;
+    /// Baixa a versão achada por `check`; `progress` recebe 0..=100.
+    fn download(&self, progress: &dyn Fn(u8)) -> Res<()>;
+    /// Encerra o app, aplica a versão baixada e abre o app de novo.
+    fn apply_and_restart(&self) -> Res<()>;
 }
 
 /// Registro de diagnóstico (log em disco). Nunca falha nem bloqueia o
@@ -113,6 +126,7 @@ mod tests {
         ok::<dyn Cam>();
         ok::<dyn Picker>();
         ok::<dyn Events>();
+        ok::<dyn Updater>();
         ok::<dyn Log>();
     }
 }

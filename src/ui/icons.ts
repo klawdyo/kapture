@@ -11,8 +11,8 @@ export const ICONS = {
   close: { f: false, d: 'M6 6l12 12M18 6L6 18' },
   chev: { f: false, d: 'M7 10l5 5 5-5' },
   rec: { f: true, d: 'M12 6a6 6 0 100 12 6 6 0 000-12z' },
-  stop: { f: true, d: 'M7 7h10v10H7z' },
-  pause: { f: true, d: 'M8 6h3v12H8zM13 6h3v12h-3z' },
+  stop: { f: true, d: 'M6 6h12v12H6z' },
+  pause: { f: true, d: 'M7.5 6h2v12h-2zM14.5 6h2v12h-2z' },
   play: { f: true, d: 'M8 5l11 7-11 7z' },
 } as const
 

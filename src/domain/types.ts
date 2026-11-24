@@ -32,3 +32,12 @@ export interface RecState { state: RecKind; secs: number }
 export interface Opt { value: string; label: string }
 /** Atualização disponível: versão nova (sem 'v') e página do release. */
 export interface Upd { version: string; url: string }
+/** Estado do ciclo de atualização do backend (evento `update-state`). */
+export type UpdSt =
+  | { kind: 'idle' }
+  | { kind: 'checking' }
+  | { kind: 'none' }
+  | { kind: 'downloading'; pct: number }
+  | { kind: 'ready'; version: string }
+  | { kind: 'fallback' }
+  | { kind: 'err' }

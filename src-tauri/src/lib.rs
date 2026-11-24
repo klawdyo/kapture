@@ -6,9 +6,9 @@ mod commands;
 mod logging;
 
 use adapters::{TauriCam, TauriEvents, TauriPicker};
-use cap_core::app::{CamCtl, Lister, LoggedEnc, MicMeter, Recorder, RegionPick, UrlOpen};
+use cap_core::app::{CamCtl, Lister, LoggedEnc, MicMeter, Recorder, RegionPick, Update, UrlOpen};
 use cap_core::media::PickChan;
-use cap_core::ports::{Capture, Clock, Devs, Encoder, Fs, Log, Opener, Targets};
+use cap_core::ports::{Capture, Clock, Devs, Encoder, Fs, Log, Opener, Targets, Updater};
 use commands::Core;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
@@ -28,6 +28,7 @@ struct Plat {
     clock: Arc<dyn Clock>,
     fs: Arc<dyn Fs>,
     opener: Arc<dyn Opener>,
+    updater: Arc<dyn Updater>,
 }
 
 /// Windows: adaptadores reais.
@@ -42,6 +43,7 @@ fn plat() -> Plat {
         clock: Arc::new(WinClock::new()),
         fs: Arc::new(WinFs),
         opener: Arc::new(WinOpener),
+        updater: Arc::new(VpkUpdater::new()),
     }
 }
 
@@ -57,6 +59,11 @@ fn plat() -> Plat {
         clock: Arc::new(FakeClock::default()),
         fs: Arc::new(FakeFs::default()),
         opener: Arc::new(FakeOpener::default()),
+        // Sem instalador: a interface cai no aviso simples (consulta ao GitHub).
+        updater: Arc::new(FakeUpdater {
+            supported: Mutex::new(false),
+            ..Default::default()
+        }),
     }
 }
 
@@ -82,8 +89,9 @@ fn wire(app: AppHandle) -> Arc<Core> {
         lister: Lister::new(p.targets, p.devs, log.clone()),
         cam: CamCtl::new(cam, log.clone()),
         pick: RegionPick::new(picker, log.clone()),
-        meter: MicMeter::new(p.cap, events, log.clone()),
+        meter: MicMeter::new(p.cap, events.clone(), log.clone()),
         url: UrlOpen::new(p.opener, log.clone()),
+        upd: Update::new(p.updater, events, log.clone()),
         chan,
         log,
     })
@@ -169,6 +177,8 @@ pub fn run() {
             commands::log_ui,
             commands::open_logs,
             commands::open_url,
+            commands::update_start,
+            commands::update_apply,
             commands::fit_toolbar,
         ])
         .run(tauri::generate_context!())

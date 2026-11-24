@@ -50,14 +50,14 @@ describe('ToolbarApp', () => {
     await w.find('button[title="Gravar"]').trigger('click')
     await flushPromises()
     expect(w.find('.clock').text()).toBe('00:00')
-    expect(b.calls.filter((c) => c[0] === 'fitBar').at(-1)![1]).toEqual({ w: 260, h: 56 }) // pílula
+    expect(b.calls.filter((c) => c[0] === 'fitBar').at(-1)![1]).toEqual({ w: 150, h: 48 }) // pílula
     expect(b.calls.find((c) => c[0] === 'start')![1]).toMatchObject({ sys: false, fps: 60, micId: 'm1', targetId: 1 })
-    // pausa / retoma
-    await w.find('button[title="Pausar"]').trigger('click')
-    await flushPromises()
-    expect(w.find('.dot.off').exists()).toBe(true)
-    await w.find('button[title="Retomar"]').trigger('click')
-    await flushPromises()
+    // pílula: sem botão de pausa; tudo arrastável menos o botão de parar
+    expect(w.find('button[title="Pausar"]').exists()).toBe(false)
+    expect(w.find('.bar.pill').attributes('data-tauri-drag-region')).toBeDefined()
+    expect(w.find('.dot').attributes('data-tauri-drag-region')).toBeDefined()
+    expect(w.find('.clock').attributes('data-tauri-drag-region')).toBeDefined()
+    expect(w.find('button[title="Parar"]').attributes('data-tauri-drag-region')).toBeUndefined()
     // para
     await w.find('button[title="Parar"]').trigger('click')
     await flushPromises()
@@ -72,6 +72,7 @@ describe('ToolbarApp', () => {
     await w.find('button[title="Gravar"]').trigger('click')
     await flushPromises()
     expect(w.find('.err').text()).toBe('Falhou')
+    expect(w.find('.err').attributes('data-tauri-drag-region')).toBeDefined()
     w.unmount()
     expect(b.subs('hotkey')).toBe(0)
   })
@@ -101,9 +102,21 @@ describe('RegionSelector', () => {
     await w.find('.ov').trigger('mousemove', { clientX: 210, clientY: 120 })
     expect(w.find('.tag').text()).toBe('200 × 100')
     await w.find('.ov').trigger('mouseup')
+    // alça sudeste ativa durante o redimensionamento; cursor correspondente
+    await w.find('.ov').trigger('mousemove', { clientX: 210, clientY: 120 })
+    expect((w.find('.ov').element as HTMLElement).style.cursor).toBe('nwse-resize')
+    await w.find('.ov').trigger('mousedown', { clientX: 210, clientY: 120 })
+    await w.find('.ov').trigger('mousemove', { clientX: 200, clientY: 110 })
+    expect(w.find('.hh.se.act').exists()).toBe(true)
+    expect(w.find('.tag').text()).toBe('190 × 90')
+    await w.find('.ov').trigger('mouseup')
+    await w.find('.ov').trigger('mousemove', { clientX: 100, clientY: 70 })
+    expect((w.find('.ov').element as HTMLElement).style.cursor).toBe('move')
+    await w.find('.ov').trigger('mousemove', { clientX: 900, clientY: 900 })
+    expect((w.find('.ov').element as HTMLElement).style.cursor).toBe('crosshair')
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     await flushPromises()
-    expect(b.calls[0]).toEqual(['submitRegion', { x: 10, y: 20, w: 200, h: 100 }])
+    expect(b.calls[0]).toEqual(['submitRegion', { x: 10, y: 20, w: 190, h: 90 }])
     b.fail = 'x'
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     await flushPromises()
@@ -115,32 +128,58 @@ describe('RegionSelector', () => {
 describe('ToolbarApp: atualização', () => {
   const rel = 'https://github.com/klawdyo/kapture/releases/tag/v0.2.0'
   const dot = 'button[aria-label="Atualização disponível"]'
+  const status = '[role="status"]'
+  const pill = (w: ReturnType<typeof mount>) => w.find(status).text()
 
-  it('sem atualização não mostra a bolinha e consulta uma vez', async () => {
+  it('ciclo automático: verifica, baixa, pede reinício e reinicia ao clicar', async () => {
     const u = new FakeUpdates()
     setPorts({ backend: b, media: m, updates: u })
     const w = mount(ToolbarApp)
     await flushPromises()
-    expect(w.find(dot).exists()).toBe(false)
-    expect(u.calls).toEqual(['0.1.0'])
+    expect(b.calls.some((c) => c[0] === 'updateStart')).toBe(true)
+    expect(pill(w)).toBe('') // nada até o backend responder
+    b.emit('upd', { kind: 'checking' })
+    await flushPromises()
+    expect(pill(w)).toBe('Verificando atualizações…')
+    b.emit('upd', { kind: 'downloading', pct: 42 })
+    await flushPromises()
+    expect(pill(w)).toBe('Atualizando… 42%')
+    b.emit('upd', { kind: 'ready', version: '0.2.0' })
+    await flushPromises()
+    expect(pill(w)).toBe('Reinicie para atualizar')
+    await w.find(`${status} button`).trigger('click')
+    expect(b.calls.at(-1)).toEqual(['updateApply', undefined])
+    expect(u.calls).toEqual([])
+    // modo compacto de gravação: sem status
+    await w.find('button[title="Gravar"]').trigger('click')
+    await flushPromises()
+    expect(w.find('.pill').exists()).toBe(true)
+    expect(w.find(status).exists()).toBe(false)
     w.unmount()
+    expect(b.subs('upd')).toBe(0)
   })
-  it('erro de rede não mostra nada', async () => {
+  it('sem atualização ou erro: o texto some sem alarde', async () => {
     const u = new FakeUpdates()
-    u.fail = new Error('offline')
     setPorts({ backend: b, media: m, updates: u })
     const w = mount(ToolbarApp)
     await flushPromises()
-    expect(w.find(dot).exists()).toBe(false)
+    b.emit('upd', { kind: 'checking' })
+    b.emit('upd', { kind: 'none' })
+    await flushPromises()
+    expect(pill(w)).toBe('')
     expect(w.find('.err').exists()).toBe(false)
     w.unmount()
   })
-  it('com atualização: bolinha, mensagem, Depois, Baixar e sem bolinha ao gravar', async () => {
+  it('fallback: texto, bolinha, mensagem, Depois e Baixar', async () => {
     const u = new FakeUpdates()
     u.res = { version: '0.2.0', url: rel }
     setPorts({ backend: b, media: m, updates: u })
     const w = mount(ToolbarApp)
     await flushPromises()
+    b.emit('upd', { kind: 'fallback' })
+    await flushPromises()
+    expect(u.calls).toEqual(['0.1.0'])
+    expect(pill(w)).toBe('Atualização disponível')
     expect(w.find('[role="dialog"]').exists()).toBe(false)
     await w.find(dot).trigger('click')
     expect(w.find('[role="dialog"]').text()).toContain('Nova: v0.2.0')
@@ -150,11 +189,21 @@ describe('ToolbarApp: atualização', () => {
     await w.find(dot).trigger('click')
     await w.findAll('.act button')[0].trigger('click') // Baixar
     expect(b.calls).toContainEqual(['openUrl', rel])
-    // modo compacto de gravação: sem bolinha
     await w.find('button[title="Gravar"]').trigger('click')
     await flushPromises()
-    expect(w.find('.pill').exists()).toBe(true)
     expect(w.find(dot).exists()).toBe(false)
+    w.unmount()
+  })
+  it('fallback com erro de rede não mostra nada', async () => {
+    const u = new FakeUpdates()
+    u.fail = new Error('offline')
+    setPorts({ backend: b, media: m, updates: u })
+    const w = mount(ToolbarApp)
+    await flushPromises()
+    b.emit('upd', { kind: 'fallback' })
+    await flushPromises()
+    expect(w.find(dot).exists()).toBe(false)
+    expect(pill(w)).toBe('')
     w.unmount()
   })
 })
