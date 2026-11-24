@@ -9,12 +9,16 @@ const listen = vi.fn(async (ev: string, cb: (e: { payload: unknown }) => void) =
 })
 let resized: (e: { payload: { width: number; height: number } }) => void = () => {}
 const setSize = vi.fn(async () => {})
+const minimize = vi.fn(async () => {})
+const close = vi.fn(async () => {})
 vi.mock('@tauri-apps/api/core', () => ({ invoke: (...a: unknown[]) => invoke(...a) }))
 vi.mock('@tauri-apps/api/event', () => ({ listen: (...a: [string, never]) => listen(...a) }))
 vi.mock('@tauri-apps/api/window', () => ({
   PhysicalSize: class { constructor(public width: number, public height: number) {} },
   getCurrentWindow: () => ({
     setSize,
+    minimize,
+    close,
     onResized: async (cb: typeof resized) => { resized = cb; return () => {} },
   }),
 }))
@@ -32,6 +36,9 @@ describe('FakeBackend', () => {
     expect(await f.pickRegion()).toBeNull()
     await f.submitRegion(null)
     await f.fitSquare(300)
+    await f.fitBar(720, 136)
+    await f.minimize()
+    await f.close()
     await f.logUi('warn', 'm')
     await f.openLogs()
     await f.start({ mode: 'screen', sys: true, fps: 30 })
@@ -41,7 +48,8 @@ describe('FakeBackend', () => {
     await f.resume()
     expect(f.st.state).toBe('rec')
     expect(await f.stop()).toBe(f.path)
-    expect(f.calls.map((c) => c[0])).toContain('fitSquare')
+    expect(f.calls.map((c) => c[0])).toEqual(expect.arrayContaining(['fitSquare', 'minimize', 'close']))
+    expect(f.calls).toContainEqual(['fitBar', { w: 720, h: 136 }])
     expect(f.calls).toContainEqual(['logUi', { lvl: 'warn', msg: 'm' }])
     expect(f.calls.map((c) => c[0])).toContain('openLogs')
   })
@@ -149,6 +157,14 @@ describe('realBackend', () => {
     handlers['rec-state']({ payload: { state: 'rec', secs: 2 } })
     handlers['hotkey']({ payload: null })
     expect(got).toEqual([0.3, { state: 'rec', secs: 2 }, 'hk'])
+  })
+  it('barra: minimiza, fecha e redimensiona', async () => {
+    await realBackend.minimize()
+    await realBackend.close()
+    await realBackend.fitBar(720, 184)
+    expect(minimize).toHaveBeenCalledTimes(1)
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(invoke).toHaveBeenLastCalledWith('fit_toolbar', { w: 720, h: 184 })
   })
   it('redimensiona a janela', async () => {
     const got: number[][] = []

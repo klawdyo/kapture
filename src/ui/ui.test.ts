@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import DevSelect from '../components/DevSelect.vue'
 import ModeSwitch from '../components/ModeSwitch.vue'
 import RecBtn from '../components/RecBtn.vue'
+import TitleBar from '../components/TitleBar.vue'
 import VuMeter from '../components/VuMeter.vue'
 import Box from './Box.vue'
 import Btn from './Btn.vue'
@@ -28,18 +29,18 @@ describe('ui genérico', () => {
     const a = mount(Btn, { slots: { default: 'Oi' } })
     expect(a.find('svg').exists()).toBe(false)
     expect(a.text()).toBe('Oi')
-    const b = mount(Btn, { props: { icon: 'gear', on: true, round: true, kind: 'rec' } })
+    const b = mount(Btn, { props: { icon: 'gear', on: true, round: true, kind: 'rec', col: true } })
     expect(b.find('svg').exists()).toBe(true)
     expect(b.classes()).toEqual(expect.arrayContaining(['on', 'round', 'rec']))
     await b.trigger('click')
     expect(b.emitted('click')).toHaveLength(1)
   })
-  it('Select: ícone e v-model', async () => {
+  it('Select: dica, seta e v-model', async () => {
     const s = mount(Select, { props: { modelValue: 'a', options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] } })
-    expect(s.find('svg').exists()).toBe(false)
+    expect(s.find('select').attributes('title')).toBe('A') // dica com o nome completo
     await s.find('select').setValue('b')
     expect(s.emitted('update:modelValue')![0]).toEqual(['b'])
-    expect(mount(Select, { props: { modelValue: 'a', options: [], icon: 'mic' } }).find('svg').exists()).toBe(true)
+    expect(mount(Select, { props: { modelValue: 'x', options: [], title: 'T' } }).find('select').attributes('title')).toBe('')
   })
   it('Segmented: marca e emite', async () => {
     const s = mount(Segmented, { props: { modelValue: 'a', options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B', icon: 'area' }] } })
@@ -75,16 +76,28 @@ describe('components do domínio', () => {
     expect(m.emitted('update:modelValue')![0]).toEqual(['area'])
   })
   it('DevSelect inclui "nenhum" e emite', async () => {
-    const d = mount(DevSelect, { props: { modelValue: '', devs: [{ id: 'x', name: 'Mic X' }], icon: 'mic', none: 'Sem mic' } })
+    const d = mount(DevSelect, { props: { modelValue: '', devs: [{ id: 'x', name: 'Mic X' }], icon: 'mic', label: 'Microfone', none: 'Sem mic' }, slots: { default: '<b class="s">vu</b>' } })
+    expect(d.text()).toContain('Microfone')
+    expect(d.find('.s').exists()).toBe(true)
     expect(d.findAll('option').map((o) => o.text())).toEqual(['Sem mic', 'Mic X'])
     await d.find('select').setValue('x')
     expect(d.emitted('update:modelValue')![0]).toEqual(['x'])
   })
   it('VuMeter repassa o nível', () => {
-    expect(mount(VuMeter, { props: { value: 0.5 } }).findAll('i.on')).toHaveLength(5)
+    expect(mount(VuMeter, { props: { value: 0.5 } }).findAll('i.on')).toHaveLength(4)
   })
   it('RecBtn alterna ícone e título', () => {
     expect(mount(RecBtn, { props: { rec: false } }).attributes('title')).toBe('Gravar')
     expect(mount(RecBtn, { props: { rec: true } }).attributes('title')).toBe('Parar')
+    expect(mount(RecBtn, { props: { rec: false } }).text()).toContain('Gravar')
+  })
+  it('TitleBar emite minimizar e fechar', async () => {
+    const t = mount(TitleBar, { slots: { default: 'status' } })
+    expect(t.text()).toContain('Gravador de Tela')
+    expect(t.text()).toContain('status')
+    await t.find('button[title="Minimizar"]').trigger('click')
+    await t.find('button[title="Fechar"]').trigger('click')
+    expect(t.emitted('min')).toHaveLength(1)
+    expect(t.emitted('close')).toHaveLength(1)
   })
 })

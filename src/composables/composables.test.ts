@@ -121,6 +121,42 @@ describe('useToolbar', () => {
     t.toggleCfg()
     expect(t.cfg.value).toBe(true)
   })
+  it('minimiza e fecha pela porta', async () => {
+    const t = useToolbar()
+    await t.minimize()
+    await t.close()
+    expect(b.calls.map((c) => c[0])).toEqual(['minimize', 'close'])
+    b.fail = 'x'
+    await t.close()
+    expect(t.err.value).toBe('x')
+  })
+  it('a janela acompanha o conteúdo: linha extra e pílula', async () => {
+    const t = useToolbar()
+    await t.init()
+    const fits = () => b.calls.filter((c) => c[0] === 'fitBar').map((c) => c[1])
+    expect(t.extra.value).toBe(false) // um só monitor
+    t.toggleCfg()
+    await flush()
+    expect(fits()).toEqual([{ w: 720, h: 184 }])
+    t.toggleCfg()
+    await t.toggle() // grava: pílula
+    await flush()
+    expect(fits().at(-1)).toEqual({ w: 260, h: 56 })
+    b.fail = 'sem janela'
+    t.toggleCfg()
+    t.toggleCfg()
+    t.rec.value = { state: 'idle', secs: 0 }
+    await flush()
+    expect(t.err.value).toBe('sem janela')
+  })
+  it('várias telas abrem a linha extra, exceto no modo área', async () => {
+    b.tg.monitors.push({ id: 2, name: 'Tela 2', w: 1280, h: 720, x: 1920, y: 0, primary: false })
+    const t = useToolbar()
+    await t.init()
+    expect(t.extra.value).toBe(true)
+    t.setMode('area')
+    expect(t.extra.value).toBe(false)
+  })
 })
 
 describe('useWebcam', () => {

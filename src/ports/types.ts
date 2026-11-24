@@ -27,6 +27,12 @@ export interface Backend {
   logUi(lvl: LogLvl, msg: string): Promise<void>
   /** Abre a pasta de logs no Explorer. */
   openLogs(): Promise<void>
+  /** Minimiza a janela atual. */
+  minimize(): Promise<void>
+  /** Fecha a janela atual (a da barra encerra o app). */
+  close(): Promise<void>
+  /** Redimensiona a barra (px lógicos), mantendo o centro da base. */
+  fitBar(w: number, h: number): Promise<void>
   /** Força a janela atual a ficar quadrada (px físicos). */
   fitSquare(size: number): Promise<void>
   onMic(cb: (level: number) => void): Promise<Off>

@@ -12,7 +12,7 @@ use cap_core::ports::{Capture, Clock, Devs, Encoder, Fs, Log, Targets};
 use commands::Core;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
-use tauri::{AppHandle, Manager, PhysicalPosition};
+use tauri::{AppHandle, LogicalSize, Manager, PhysicalPosition, WindowEvent};
 
 /// Trava um `Mutex` ignorando envenenamento.
 pub(crate) fn lk<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -85,17 +85,41 @@ fn wire(app: AppHandle) -> Arc<Core> {
     })
 }
 
-/// Centraliza a barra no topo do monitor atual.
+/// Folga (px lógicos) entre a barra e a borda inferior da área de trabalho.
+const BAR_GAP: f64 = 28.0;
+
+/// Centraliza a barra na base da área de trabalho (acima da barra de tarefas).
 fn place_toolbar(app: &AppHandle) {
     let Some(w) = app.get_webview_window("toolbar") else {
         return;
     };
     if let (Ok(Some(m)), Ok(s)) = (w.current_monitor(), w.outer_size()) {
-        let x = m.position().x + (m.size().width as i32 - s.width as i32) / 2;
-        let _ = w.set_position(PhysicalPosition::new(x, m.position().y + 16));
+        let wa = m.work_area();
+        let gap = (BAR_GAP * m.scale_factor()) as i32;
+        let x = wa.position.x + (wa.size.width as i32 - s.width as i32) / 2;
+        let y = wa.position.y + wa.size.height as i32 - s.height as i32 - gap;
+        let _ = w.set_position(PhysicalPosition::new(x, y));
     }
     // A barra não aparece na gravação (a webcam, que é outra janela, sim).
     let _ = w.set_content_protected(true);
+}
+
+/// Redimensiona a barra (px lógicos) mantendo o centro e a borda inferior.
+pub(crate) fn fit_toolbar(app: &AppHandle, w: f64, h: f64) -> Result<(), String> {
+    let win = app
+        .get_webview_window("toolbar")
+        .ok_or("Janela da barra não encontrada.")?;
+    let e = |e: tauri::Error| e.to_string();
+    let (pos, old) = (
+        win.outer_position().map_err(e)?,
+        win.outer_size().map_err(e)?,
+    );
+    let new: tauri::PhysicalSize<i32> =
+        LogicalSize::new(w, h).to_physical(win.scale_factor().map_err(e)?);
+    win.set_size(LogicalSize::new(w, h)).map_err(e)?;
+    let x = pos.x + (old.width as i32 - new.width) / 2;
+    let y = pos.y + old.height as i32 - new.height;
+    win.set_position(PhysicalPosition::new(x, y)).map_err(e)
 }
 
 /// Ponto de entrada do app.
@@ -119,6 +143,12 @@ pub fn run() {
             logging::get().info("app pronto (janela da barra criada)");
             Ok(())
         })
+        // Fechar a barra encerra o app (a janela da webcam, oculta, o manteria vivo).
+        .on_window_event(|win, ev| {
+            if win.label() == "toolbar" && matches!(ev, WindowEvent::Destroyed) {
+                win.app_handle().exit(0);
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             commands::list_targets,
             commands::list_devices,
@@ -134,6 +164,7 @@ pub fn run() {
             commands::mic_stop,
             commands::log_ui,
             commands::open_logs,
+            commands::fit_toolbar,
         ])
         .run(tauri::generate_context!())
         .expect("falha ao iniciar o Cap");

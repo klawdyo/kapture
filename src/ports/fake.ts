@@ -60,6 +60,9 @@ export class FakeBackend implements Backend {
   async micStop() { await this.c('micStop') }
   async logUi(lvl: LogLvl, msg: string) { await this.c('logUi', { lvl, msg }) }
   async openLogs() { await this.c('openLogs') }
+  async minimize() { await this.c('minimize') }
+  async close() { await this.c('close') }
+  async fitBar(w: number, h: number) { await this.c('fitBar', { w, h }) }
   async fitSquare(size: number) { await this.c('fitSquare', size) }
   onMic(cb: (l: number) => void) { return this.on('mic', cb) }
   onState(cb: (s: RecState) => void) { return this.on('state', cb) }

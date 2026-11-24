@@ -41,6 +41,7 @@ packaging/msix/             # AppxManifest + script MakeAppx
 | mic_stop | - | void (desliga o VU meter e zera o nível) |
 | log_ui | `{lvl:"debug"\|"info"\|"warn"\|"error", msg:string}` | void (grava `[ui] msg` no log em disco; `lvl` desconhecido vira `info`) |
 | open_logs | - | void (abre a pasta de logs no Explorer; erro em português se não abrir) |
+| fit_toolbar | w,h (px lógicos) | void (redimensiona a janela `toolbar` mantendo centro e base; `Backend.fitBar`) |
 Erros: string em português.
 
 Regras do VU meter (`MicMeter`, testadas em cap-core): no máximo um medidor ativo.
@@ -69,10 +70,11 @@ Porta `Log` (`ports.rs`: `write(lvl, msg)` mais `debug/info/warn/error`), nunca 
 - Frontend: `window` `error`, `unhandledrejection`, erros de componentes Vue (`src/boot.ts`), falhas de `invoke`
   (`ports/real.ts`) e falhas da câmera chegam ao backend por `log_ui` (porta `Backend.logUi`, real e fake). No máximo
   100 mensagens por janela.
-- A toolbar tem, no painel de configurações, o botão "Abrir logs" (`Backend.openLogs` -> `open_logs`).
+- Minimizar e fechar usam a API de janela (`Backend.minimize`/`close`, permissões `core:window:allow-minimize`/`allow-close`); fechar a `toolbar` encerra o app.
+- A toolbar tem, na linha extra (engrenagem), o botão "Abrir logs" (`Backend.openLogs` -> `open_logs`).
 
 ## Eventos (emit)
 `mic-level` `{level:number 0..1}` | `rec-state` RecState | `hotkey` (Ctrl+Shift+R alterna gravação)
 
 ## Janelas
-`toolbar` (pílula, sem moldura, transparente, topo), `webcam` (quadrada 1:1, transparente, topo, arrastável/redimensionável), `region-selector` (fullscreen, sob demanda). Entradas Vite: `index.html` (toolbar), `webcam.html`, `region.html`.
+`toolbar` (painel 720x136 px, cantos arredondados, sem moldura, transparente com `windowEffects` mica e fundo semi-opaco por CSS como fallback, centralizada na base da área de trabalho; cresce +48 px com a linha extra de alvo/configurações e vira pílula 260x56 gravando, via `fit_toolbar`), `webcam` (quadrada 1:1, transparente, topo, arrastável/redimensionável), `region-selector` (fullscreen, sob demanda). Entradas Vite: `index.html` (toolbar), `webcam.html`, `region.html`.

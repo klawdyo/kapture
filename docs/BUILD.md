@@ -44,7 +44,23 @@ O pacote não é assinado: serve para envio à Microsoft Store, que assina na ce
 
 ## Ícones
 
-A logo oficial (raster 380x380, fundo opaco com grade, recortada da Figura 1 da especificação) está em `assets/logo-light.png` e `assets/logo-dark.png`. Os ícones em `src-tauri/icons/`, os PNGs do MSIX em `packaging/msix/Assets/`, as imagens do site e `src/assets/logo.png` derivam da versão escura (cantos arredondados aplicados). `docs/ui-reference.png` é só referência visual da interface.
+As logos oficiais são `assets/logo_light_transparent.png` e `assets/logo_dark_transparent.png` (800x800, RGBA, fundo transparente, com o arredondado próprio). Elas nunca são alteradas: tudo o mais é cópia gerada. (`assets/logo-light.png` e `assets/logo-dark.png` são as logos antigas, em JPEG com fundo opaco, mantidas só por histórico.) Todo o resto deriva das transparentes:
+
+- `src-tauri/icons/`: `32x32.png`, `128x128.png`, `128x128@2x.png` (256), `icon.png` (512) e `icon.ico` (16, 24, 32, 48, 64, 128 e 256, PNG comprimido em cada entrada);
+- `packaging/msix/Assets/`: `StoreLogo`, `Square44x44`, `Square71x71`, `Square150x150`, `Wide310x150` e `Square310x310`, com fundo transparente;
+- `site/public/`: `logo-light*.png`, `logo-dark*.png` (64, 128 e 480 px), `favicon.png` e `og.png` (1200x630, logo sobre grafite);
+- `src/assets/logo.png` (128 px, usada pela barra do app).
+
+Os ícones do app, do MSIX e a barra usam a versão **clara**: ela mantém contraste sobre a barra de tarefas escura (padrão do Windows) e sobre a barra do app. O site e o README alternam as duas pelo tema.
+
+Para regenerar tudo depois de trocar uma logo (requer Python 3 e Pillow):
+
+```
+pip install pillow
+python scripts/make-icons.py
+```
+
+O script é idempotente: regrava sempre os mesmos arquivos a partir das duas logos. `assets/store/` (artes da listagem da Microsoft Store) e a imagem original gerada (`assets/Gemini_Generated_Image_*.png`, 3,3 MB) não são tocadas por ele. `docs/ui-reference.png` é só referência visual da interface.
 
 ## Release
 

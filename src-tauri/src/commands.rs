@@ -146,3 +146,9 @@ pub fn open_logs(st: St<'_>) -> Result<(), String> {
     log_ipc(&*st.log, "open_logs", 0, &r);
     r
 }
+
+/// Redimensiona a janela da barra (px lógicos), mantendo centro e base.
+#[tauri::command]
+pub fn fit_toolbar(app: tauri::AppHandle, w: f64, h: f64) -> Result<(), String> {
+    crate::fit_toolbar(&app, w, h)
+}

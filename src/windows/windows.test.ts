@@ -25,28 +25,32 @@ describe('ToolbarApp', () => {
   it('fluxo completo: configurar, gravar, pausar, parar', async () => {
     const w = mount(ToolbarApp)
     await flushPromises()
-    expect(w.find('.sel').exists()).toBe(true) // seletor de alvo (modo tela)
+    expect(w.find('.tgt').exists()).toBe(false) // um monitor: sem linha de alvo
     // painel de configurações
     await w.find('button[title="Configurações"]').trigger('click')
+    await flushPromises()
+    expect(b.calls.find((c) => c[0] === 'fitBar')![1]).toEqual({ w: 720, h: 184 })
+    expect(w.find('.tgt').exists()).toBe(true) // seletor de alvo na linha extra
     await w.find('button[title="Áudio do sistema"]').trigger('click')
     const logs = w.find('button[title="Abrir pasta de logs"]')
     expect(logs.text()).toBe('Abrir logs')
     await logs.trigger('click')
     expect(b.calls.some((c) => c[0] === 'openLogs')).toBe(true)
-    await w.find('select[title], label[title="Quadros por segundo"] select').setValue('60')
+    await w.find('select[aria-label="Quadros por segundo"]').setValue('60')
     // alvo, câmera e mic
-    await w.findAll('select')[0].setValue('1')
-    await w.findAll('select')[1].setValue('c1')
-    await w.findAll('select')[2].setValue('m1')
+    await w.find('select[aria-label="Alvo"]').setValue('1')
+    await w.find('select[aria-label="Sem câmera"]').setValue('c1')
+    await w.find('select[aria-label="Sem microfone"]').setValue('m1')
     b.emit('mic', 0.9)
     // área não tem seletor de alvo
     await w.findAll('.seg button')[2].trigger('click')
-    expect(w.find('label[title="Alvo"]').exists()).toBe(false)
+    expect(w.find('select[aria-label="Alvo"]').exists()).toBe(false)
     await w.findAll('.seg button')[0].trigger('click')
     // grava
     await w.find('button[title="Gravar"]').trigger('click')
     await flushPromises()
     expect(w.find('.clock').text()).toBe('00:00')
+    expect(b.calls.filter((c) => c[0] === 'fitBar').at(-1)![1]).toEqual({ w: 260, h: 56 }) // pílula
     expect(b.calls.find((c) => c[0] === 'start')![1]).toMatchObject({ sys: false, fps: 60, micId: 'm1', targetId: 1 })
     // pausa / retoma
     await w.find('button[title="Pausar"]').trigger('click')
@@ -58,6 +62,11 @@ describe('ToolbarApp', () => {
     await w.find('button[title="Parar"]').trigger('click')
     await flushPromises()
     expect(w.find('.ok').exists()).toBe(true)
+    // minimizar e fechar
+    await w.find('button[title="Minimizar"]').trigger('click')
+    await w.find('button[title="Fechar"]').trigger('click')
+    expect(b.calls.map((c) => c[0])).toEqual(expect.arrayContaining(['minimize', 'close']))
+    expect(w.find('[data-tauri-drag-region]').exists()).toBe(true)
     // erro
     b.fail = 'Falhou'
     await w.find('button[title="Gravar"]').trigger('click')

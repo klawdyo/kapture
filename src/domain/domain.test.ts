@@ -6,7 +6,7 @@ import { detail, msg } from './err'
 import { fmtError, fmtReject, fmtVue } from './log'
 import { idle, isActive, isPaused } from './rec'
 import { big, label, MIN, norm, phys } from './rect'
-import { fit } from './size'
+import { BAR, barSize, EXTRA_H, fit, PILL } from './size'
 import { fmt } from './time'
 
 describe('rect', () => {
@@ -139,5 +139,13 @@ describe('erros no log', () => {
   it('fmtReject e fmtVue', () => {
     expect(fmtReject('nope')).toBe('promessa rejeitada: nope')
     expect(fmtVue('x', 'render')).toBe('erro no componente (render): x')
+  })
+})
+
+describe('barSize', () => {
+  it('escolhe o tamanho da barra', () => {
+    expect(barSize(false, false)).toEqual(BAR)
+    expect(barSize(false, true)).toEqual({ w: BAR.w, h: BAR.h + EXTRA_H })
+    expect(barSize(true, true)).toEqual(PILL)
   })
 })
