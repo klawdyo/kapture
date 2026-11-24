@@ -26,7 +26,7 @@ Como foram geradas: Chromium (Playwright, 2x) rodando o frontend com o backend F
 - **Logos:** as originais ficam em `assets/` (`logo_*_transparent.png`, `store/*`, imagem do Gemini) e **nunca são alteradas**. Qualquer derivado é uma cópia gerada por `scripts/make-icons.py`.
 - **Cores:** grafite azulado nas superfícies. O vermelho vivo (`--red`, `--red2`) só aparece em Gravar, indicadores ativos (ponto de gravação, alça em uso, bolinha de atualização) e detalhes de enquadramento. Nada de azul novo.
 - **Pílula de gravação:** só ponto, cronômetro e **parar**. **Sem botão de pausa** (retirado a pedido do dono; `pause`/`resume` continuam no backend, sem uso na UI). Compacta, arrastável por todo o corpo (menos o botão de parar) e semitransparente em repouso.
-- **Painel e janelas:** tudo arrastável pelas áreas sem controle. A barra e o seletor de área ficam fora do vídeo (`set_content_protected`), mas continuam arrastáveis.
+- **Painel e janelas:** tudo arrastável pelas áreas sem controle. A barra fica fora do vídeo (`set_content_protected`) só enquanto grava ou pausado (regra pura `protected` do cap-core, aplicada ao emitir `rec-state`); ocioso, o Print Screen a captura. O seletor de área não é protegido.
 - **Seletor de área:** não escurece o fundo; o retângulo é movível e redimensionável pelas 8 alças.
 - **Atualização:** o app verifica ao abrir e avisa com a bolinha (Baixar abre a página do release). A troca automática do exe é pendência (CLAUDE.md). Nada disso aparece durante a gravação.
 - **Distribuição:** só o `kapture.exe` solto, sem instalador, sem MSI, sem Velopack (decisão do dono). Tamanho é prioridade.

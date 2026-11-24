@@ -55,8 +55,6 @@ impl Picker for TauriPicker {
                 CapErr::from(ERR)
             })?;
         logging::get().info("seletor de área: janela criada");
-        // O overlay de seleção não deve aparecer em gravações em andamento.
-        let _ = win.set_content_protected(true);
         // Fechar a janela (Alt+F4) sem responder equivale a cancelar.
         let chan = self.chan.clone();
         win.on_window_event(move |e| {

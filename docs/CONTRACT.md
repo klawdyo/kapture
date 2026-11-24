@@ -95,7 +95,7 @@ Frontend: `Backend.updateStart()` (`update_start`), `Backend.updateApply()` (`up
 - CSP: `connect-src 'self' ipc: http://ipc.localhost https://api.github.com`. Capability `core:app:allow-version`.
 
 ## Eventos (emit)
-`mic-level` `{level:number 0..1}` | `rec-state` RecState | `update-state` UpdState (ver Atualizações) | `hotkey` (Ctrl+Shift+R alterna gravação)
+`mic-level` `{level:number 0..1}` | `rec-state` RecState (o adaptador também liga `set_content_protected` na `toolbar` quando `protected(state)` é verdadeiro, isto é, em `rec`/`paused`, e desliga em `idle`) | `update-state` UpdState (ver Atualizações) | `hotkey` (Ctrl+Shift+R alterna gravação)
 
 ## Janelas
 `toolbar` (painel 720x136 px, cantos arredondados, sem moldura, transparente, sem sombra nem `windowEffects` (o DWM desenhava uma borda preta de canto reto em volta do painel arredondado; borda fina e fundo semi-opaco são só CSS), centralizada na base da área de trabalho; cresce +48 px com a linha extra de alvo/configurações e vira pílula 150x48 gravando, via `fit_toolbar`), na pílula só há ponto indicador, cronômetro e Parar (sem botão de pausa na UI; `pause_rec`/`resume_rec` seguem no backend), semitransparente (opacity .72, 1 em hover/foco) e arrastável; `webcam` (quadrada 1:1, transparente, topo, arrastável/redimensionável), `region-selector` (fullscreen, sob demanda; o retângulo desenha, move por dentro e redimensiona pelas 8 alças; setas movem 1 px, Shift 10 px, Alt+setas redimensionam; mínimo 16x16, preso à tela; Enter confirma, Esc cancela). Entradas Vite: `index.html` (toolbar), `webcam.html`, `region.html`.

@@ -1,6 +1,6 @@
 //! Regras puras do domínio: validação, nomes, áudio, webcam e cronômetro.
 
-use super::model::{Mode, RecCfg, Region, Stamp};
+use super::model::{Mode, RecCfg, Region, St, Stamp};
 use crate::{CapErr, Res};
 
 /// Lado mínimo (px) de uma região de captura.
@@ -15,6 +15,12 @@ pub const CAM_MAX: u32 = 640;
 /// A região atende ao tamanho mínimo?
 pub fn region_ok(r: &Region) -> bool {
     r.w >= MIN_REGION && r.h >= MIN_REGION
+}
+
+/// A barra deve ficar FORA da captura (tela e Print Screen)? Só enquanto grava
+/// ou pausado: ocioso, ela aparece normalmente nas capturas do usuário.
+pub fn protected(st: St) -> bool {
+    st != St::Idle
 }
 
 /// Prefixo das únicas URLs que o app abre no navegador (páginas de release).
@@ -233,6 +239,13 @@ mod tests {
         assert!((level_f32(&[0.5, -0.5]) - 0.5).abs() < 1e-6);
         assert_eq!(level_f32(&[3.0, 3.0]), 1.0);
         assert_eq!(level_f32(&[f32::NAN]), 0.0);
+    }
+
+    #[test]
+    fn barra_fora_da_captura_so_gravando() {
+        assert!(!protected(St::Idle));
+        assert!(protected(St::Rec));
+        assert!(protected(St::Paused));
     }
 
     #[test]

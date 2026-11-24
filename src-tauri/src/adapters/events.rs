@@ -1,9 +1,10 @@
 //! Adaptador `Events`: publica eventos para as janelas via Tauri.
 
-use cap_core::domain::{RecState, UpdState};
+use cap_core::domain::{protected, RecState, UpdState};
 use cap_core::ports::Events;
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use std::sync::atomic::{AtomicBool, Ordering};
+use tauri::{AppHandle, Emitter, Manager};
 
 /// Carga do evento `mic-level`.
 #[derive(Serialize, Clone)]
@@ -14,11 +15,27 @@ struct Level {
 /// Emite `mic-level`, `rec-state` e `update-state` para todas as janelas.
 pub struct TauriEvents {
     app: AppHandle,
+    /// Última proteção aplicada à barra (evita reaplicar a cada tique de 1 s).
+    on: AtomicBool,
 }
 
 impl TauriEvents {
     pub fn new(app: AppHandle) -> Self {
-        Self { app }
+        Self {
+            app,
+            on: AtomicBool::new(false),
+        }
+    }
+
+    /// Liga ou desliga a exclusão da barra da captura conforme a regra pura `protected`.
+    /// Só gravando a barra some do vídeo; ocioso, o Print Screen a enxerga.
+    fn shield(&self, st: &RecState) {
+        let on = protected(st.state);
+        if self.on.swap(on, Ordering::SeqCst) != on {
+            if let Some(w) = self.app.get_webview_window("toolbar") {
+                let _ = w.set_content_protected(on);
+            }
+        }
     }
 }
 
@@ -29,6 +46,7 @@ impl Events for TauriEvents {
     }
 
     fn rec_state(&self, st: &RecState) {
+        self.shield(st);
         let _ = self.app.emit("rec-state", *st);
     }
 
