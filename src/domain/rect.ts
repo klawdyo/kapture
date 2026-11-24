@@ -23,7 +23,22 @@ export function big(r: Region): boolean {
   return r.w >= MIN && r.h >= MIN
 }
 
-/** Converte px CSS em px físicos (escala do monitor + origem da janela). */
+/** Origem física do monitor na área de trabalho virtual e a escala dele (vindas da URL). */
+export interface Org { ox: number; oy: number; s: number }
+
+/** Lê `?ox=&oy=&s=` da janela do seletor; ausente ou inválido vira origem 0,0 e escala 1. */
+export function org(search: string): Org {
+  const q = new URLSearchParams(search)
+  const num = (k: string, d: number): number => {
+    const t = q.get(k)
+    const v = t === null || t.trim() === '' ? NaN : Number(t)
+    return Number.isFinite(v) ? v : d
+  }
+  const s = num('s', 1)
+  return { ox: Math.round(num('ox', 0)), oy: Math.round(num('oy', 0)), s: s > 0 ? s : 1 }
+}
+
+/** Converte px CSS em px físicos (escala do monitor + origem do monitor, global e possivelmente negativa). */
 export function phys(r: Region, dpr: number, ox: number, oy: number): Region {
   return {
     x: Math.round(r.x * dpr + ox),

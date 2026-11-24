@@ -47,20 +47,6 @@
         "resizable": true,
         "visible": false,
         "create": false
-      },
-      {
-        "label": "region-selector",
-        "dragDropEnabled": false,
-        "title": "Selecionar área",
-        "url": "region.html",
-        "fullscreen": true,
-        "decorations": false,
-        "transparent": true,
-        "shadow": false,
-        "alwaysOnTop": true,
-        "skipTaskbar": true,
-        "resizable": false,
-        "create": false
       }
     ],
     "security": {

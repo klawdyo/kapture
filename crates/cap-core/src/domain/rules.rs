@@ -23,6 +23,25 @@ pub fn protected(st: St) -> bool {
     st != St::Idle
 }
 
+/// Prefixo do label das janelas do seletor de área (uma por monitor).
+pub const SEL: &str = "region-selector";
+
+/// Label da janela do seletor do monitor `i`: `region-selector-0`, `-1`...
+pub fn sel_label(i: usize) -> String {
+    format!("{SEL}-{i}")
+}
+
+/// O label é de uma janela do seletor (inclusive o antigo, sem sufixo)?
+pub fn is_sel(label: &str) -> bool {
+    label == SEL || label.starts_with("region-selector-")
+}
+
+/// URL da página do seletor com a origem FÍSICA do monitor na área de trabalho
+/// virtual (pode ser negativa) e a escala dele; a página converte px CSS em físicos.
+pub fn sel_url(ox: i32, oy: i32, scale: f64) -> String {
+    format!("region.html?ox={ox}&oy={oy}&s={scale}")
+}
+
 /// Prefixo das únicas URLs que o app abre no navegador (páginas de release).
 pub const RELEASE_URL: &str = "https://github.com/klawdyo/kapture/releases/";
 
@@ -246,6 +265,19 @@ mod tests {
         assert!(!protected(St::Idle));
         assert!(protected(St::Rec));
         assert!(protected(St::Paused));
+    }
+
+    #[test]
+    fn janelas_do_seletor() {
+        assert_eq!(sel_label(0), "region-selector-0");
+        assert_eq!(sel_label(12), "region-selector-12");
+        assert!(is_sel("region-selector"));
+        assert!(is_sel("region-selector-1"));
+        assert!(!is_sel("region-selectors"));
+        assert!(!is_sel("toolbar"));
+        assert!(!is_sel("webcam"));
+        assert_eq!(sel_url(-1920, 0, 1.25), "region.html?ox=-1920&oy=0&s=1.25");
+        assert_eq!(sel_url(0, 1080, 2.0), "region.html?ox=0&oy=1080&s=2");
     }
 
     #[test]
