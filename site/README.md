@@ -11,7 +11,7 @@ Para mudar o valor, é preciso gerar o site de novo.
 
 | Variável | Padrão | Uso |
 | --- | --- | --- |
-| `NUXT_PUBLIC_DOWNLOAD_URL` | `https://github.com/klawdyo/kapture/releases/latest/download/kapture.exe` | Destino dos botões "Baixar o kapture.exe" |
+| `NUXT_PUBLIC_DOWNLOAD_URL` | `https://github.com/klawdyo/kapture/releases/latest` | Página do último release, destino dos botões "Baixar o kapture.exe" |
 | `NUXT_PUBLIC_SITE_URL` | vazio | URL pública do site, usada em `og:url` e `og:image` |
 
 O repositório `klawdyo/kapture` é **público**, então o link padrão baixa direto o `kapture.exe`

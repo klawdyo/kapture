@@ -5,7 +5,7 @@
 FROM node:22-alpine AS build
 WORKDIR /repo
 
-ARG NUXT_PUBLIC_DOWNLOAD_URL=https://github.com/klawdyo/kapture/releases/latest/download/kapture.exe
+ARG NUXT_PUBLIC_DOWNLOAD_URL=https://github.com/klawdyo/kapture/releases/latest
 ARG NUXT_PUBLIC_SITE_URL=
 ENV NUXT_PUBLIC_DOWNLOAD_URL=$NUXT_PUBLIC_DOWNLOAD_URL \
     NUXT_PUBLIC_SITE_URL=$NUXT_PUBLIC_SITE_URL \
