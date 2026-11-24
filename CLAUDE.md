@@ -15,6 +15,8 @@ Gravador de tela leve para Windows (Tauri v2 + Vue 3 + Rust). Leia isto antes de
 - Nunca altere as imagens originais em `assets/`. Gere cópias (`scripts/make-icons.py`).
 - Pílula de gravação sem botão de pausa. Barra e seletor de área arrastáveis.
 - Instalador por usuário, sem admin, **o menor possível**. O app existe para cumprir a obrigação e deve ser o mais leve possível: não adicione dependências pesadas (nada de reqwest, plugins do Tauri sem necessidade, FFmpeg).
+- Tamanho exibido no site: manter sincronizado como **"menos de 2 MB"** (hero, recursos e meta). Sempre que o tamanho real do instalador compilado ultrapassar 2 MB, atualizar esse valor no site.
+- Assinatura digital (SmartScreen): o dono decidiu manter o instalador sem assinatura digital por enquanto, mantendo o aviso discreto do SmartScreen no site e no README.
 - Commits breaking (`!`) são proibidos sem ordem explícita do dono.
 
 ## Convenções de código (do dono)

@@ -3,7 +3,8 @@
 services:
   site:
     build:
-      context: .
+      context: ..
+      dockerfile: site/Dockerfile
       args:
         # O site é estático: estes valores entram no build, não no runtime.
         NUXT_PUBLIC_DOWNLOAD_URL: ${NUXT_PUBLIC_DOWNLOAD_URL:-https://github.com/klawdyo/kapture/releases/latest}
