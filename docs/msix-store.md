@@ -2,12 +2,18 @@
 
 Este guia cobre o cadastro no Partner Center, de onde vem cada valor do manifesto e o que é público ou sensível. Os nomes de campos do Partner Center podem mudar de lugar na interface; o que não pude verificar daqui está marcado como "conferir".
 
+## Estado atual
+
+A geração do MSIX está **desligada** no `.github/workflows/release.yml` (passos comentados), até a identidade da Store e as imagens/logo estarem prontas. O release publica só o MSI.
+
+Para religar: descomente, no job de build, os passos "Gerar exe para o MSIX" e "Gerar MSIX (MakeAppx)" e inclua a linha `dist/*.msix` na lista `files` do passo de publicação. Depois configure as variáveis `MSIX_IDENTITY_NAME`, `MSIX_PUBLISHER` e `MSIX_PUBLISHER_DISPLAY` (seção 4).
+
 ## 1. Passo a passo no Partner Center
 
 1. Crie a conta de desenvolvedor em partner.microsoft.com (tipo Individual ou Empresa; há taxa única de registro, valor a conferir na página de inscrição).
 2. Em **Apps e jogos**, escolha **Novo produto** > **App MSIX ou PWA** e reserve o nome do app ("Cap", se estiver livre). A reserva vale por tempo limitado se você não enviar um pacote (conferir o prazo exibido).
 3. Abra o produto e vá em **Gerenciamento de produto** > **Identidade do produto** (em inglês, *Product identity*; em versões antigas, *App identity*). Ali ficam os valores do manifesto (seção 2).
-4. Ajuste o manifesto `packaging/msix/AppxManifest.xml` via variáveis (seção 4) e gere o pacote com `build-msix.ps1` (a versão precisa ter Major maior que 0, por exemplo `1.0.0`).
+4. Ajuste o manifesto `packaging/msix/AppxManifest.xml` via variáveis (seção 4) e gere o pacote com `build-msix.ps1`.
 5. Crie uma **Submissão**: preços e disponibilidade, propriedades (categoria, classificação etária), listagem (descrição, capturas de tela, ícone) e **Pacotes** (envie o `.msix` não assinado).
 6. Responda ao questionário de classificação etária e justifique a capability restrita `runFullTrust` (o app é Win32/Tauri) e o uso de webcam e microfone. Informe na certificação que a captura de tela é feita só localmente.
 7. Envie para certificação. A Store assina o pacote com o certificado dela; por isso não é preciso `.pfx` para publicar.
@@ -57,10 +63,14 @@ Sem as variáveis, o script usa placeholders e avisa; o pacote resultante serve 
 
 ## 5. Versão
 
-A Store exige `Major.Minor.Build.0` e Major maior que 0. O script força o 4º segmento em `0` e avisa se o Major for 0. Com a versão atual `0.1.0`, o MSIX sairia `0.1.0.0`, que a Store rejeita: publique a partir de `1.0.0`. Toda nova submissão precisa de versão maior que a anterior.
+A Store exige `Major.Minor.Build.0`. O script força o 4º segmento em `0`; com a versão `0.1.0`, o MSIX sai `0.1.0.0`. Toda nova submissão precisa de versão maior que a anterior.
 
 ## 6. Assets e capabilities
 
 - Assets atuais: `Square44x44`, `Square150x150`, `Wide310x150`, `StoreLogo` (escala única). Funciona, mas a Store e o Windows preferem variantes de escala (`.scale-100/125/150/200/400`) e `Square44x44Logo.targetsize-*`; recomenda-se gerá-las a partir da logo antes de publicar.
-- `runFullTrust`: obrigatória (app Win32). `webcam` e `microphone`: usadas por Media Foundation, WASAPI e `getUserMedia`.
+- `webcam` e `microphone`: usadas por Media Foundation, WASAPI e `getUserMedia`.
+- `runFullTrust`: é obrigatória para qualquer app desktop Win32/Tauri empacotado em MSIX, porque o exe roda fora do sandbox UWP. Não dá para removê-la sem reescrever o app como UWP. É uma capability restrita: a Store pede uma justificativa no envio. Texto sugerido para o campo:
+
+  - Português: "O Cap é um aplicativo desktop Win32 (Tauri) de gravação de tela. Ele precisa de runFullTrust para executar como processo de desktop e acessar as APIs de captura de tela e áudio do Windows. A captura e o processamento são feitos apenas localmente, sem envio de dados."
+  - English: "Cap is a Win32 desktop (Tauri) screen recording app. It requires runFullTrust to run as a full desktop process and use the Windows screen and audio capture APIs. Capture and processing happen locally only, with no data uploaded."
 - `graphicsCapture` não foi declarada: o app usa Windows.Graphics.Capture por monitor/janela em processo de desktop e o loopback WASAPI, que não exigem capability. Se a certificação ou um teste em máquina limpa mostrar bloqueio de captura, reavalie (não pude testar o MSIX instalado neste ambiente Linux).

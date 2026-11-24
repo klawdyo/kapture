@@ -46,7 +46,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   build:
-    name: Instaladores (MSI e MSIX)
+    name: Instaladores (MSI)
     needs: [version, tests]
     runs-on: windows-latest
     permissions:
@@ -75,23 +75,25 @@ jobs:
         shell: pwsh
         run: npx tauri build --bundles msi
 
-      - name: Gerar exe para o MSIX
-        shell: pwsh
-        run: npx tauri build --no-bundle
-
-      - name: Gerar MSIX (MakeAppx)
-        continue-on-error: true
-        shell: pwsh
-        # Dados públicos da identidade do app na Store (GitHub Variables, não secrets)
-        env:
-          MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME }}
-          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER }}
-          MSIX_PUBLISHER_DISPLAY: ${{ vars.MSIX_PUBLISHER_DISPLAY }}
-        run: >
-          ./packaging/msix/build-msix.ps1
-          -Version "${{ needs.version.outputs.version }}"
-          -Exe (Get-ChildItem target/release/*.exe | Select-Object -First 1).FullName
-          -Out dist/Cap-${{ needs.version.outputs.version }}-x64.msix
+      # MSIX desligado até a identidade da Store e as imagens/logo estarem prontas.
+      # Para religar, descomente este passo e a linha dist/*.msix em files (docs/msix-store.md).
+      # - name: Gerar exe para o MSIX
+      #   shell: pwsh
+      #   run: npx tauri build --no-bundle
+      #
+      # - name: Gerar MSIX (MakeAppx)
+      #   continue-on-error: true
+      #   shell: pwsh
+      #   # Dados públicos da identidade do app na Store (GitHub Variables, não secrets)
+      #   env:
+      #     MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME }}
+      #     MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER }}
+      #     MSIX_PUBLISHER_DISPLAY: ${{ vars.MSIX_PUBLISHER_DISPLAY }}
+      #   run: >
+      #     ./packaging/msix/build-msix.ps1
+      #     -Version "${{ needs.version.outputs.version }}"
+      #     -Exe (Get-ChildItem target/release/*.exe | Select-Object -First 1).FullName
+      #     -Out dist/Cap-${{ needs.version.outputs.version }}-x64.msix
 
       - name: Reunir artefatos, tamanhos e SHA256
         shell: pwsh
@@ -119,7 +121,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: v${{ needs.version.outputs.version }}
           body_path: RELEASE_NOTES.md
+          # MSIX desligado: para religar, inclua a linha dist/*.msix na lista abaixo.
           files: |
             dist/*.msi
-            dist/*.msix
             dist/SHA256SUMS

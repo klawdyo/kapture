@@ -3,8 +3,9 @@
 // Funções puras no topo; E/S (git, arquivos, CLI) na seção final.
 
 // Configuração simples: como tratar `!` / BREAKING CHANGE.
-// 'minor' (padrão, sobe minor e zera patch), 'major' ou 'none' (ignora o marcador).
-export const BREAKING = 'minor';
+// 'major' (padrão, sobe major e zera minor e patch), 'minor' ou 'none' (ignora o marcador).
+// Política: commit breaking é proibido sem ordem explícita do dono (docs/versioning.md).
+export const BREAKING = 'major';
 
 export const TYPES = [
   'feat', 'fix', 'perf', 'refactor', 'docs', 'style', 'test', 'build', 'ci', 'chore', 'revert',
@@ -30,19 +31,14 @@ const SUBJECT = /^([a-z]+)(?:\(([^)\s]+)\))?(!)?: (\S.*)$/;
 const SEMVER = /^(\d+)\.(\d+)\.(\d+)$/;
 const TAG = /^v(\d+\.\d+\.\d+)$/;
 
-// Commit de merge: mais de um pai ou assunto padrão do git/GitHub.
-export function isMerge(c) {
-  return (c.parents?.length ?? 0) > 1 || /^Merge /.test(c.subject);
-}
-
 // Interpreta um commit { hash, subject, body, parents }.
+// Commit fora do padrão vira { valid: false } e é simplesmente ignorado adiante.
 export function parseCommit(c) {
-  if (isMerge(c)) return { ...c, merge: true, valid: false };
   const m = SUBJECT.exec(c.subject);
-  if (!m || !TYPES.includes(m[1])) return { ...c, merge: false, valid: false };
+  if (!m || !TYPES.includes(m[1])) return { ...c, valid: false };
   const breaking = Boolean(m[3]) || /^BREAKING[ -]CHANGE: /m.test(c.body ?? '');
   return {
-    ...c, merge: false, valid: true, type: m[1], scope: m[2] ?? null, breaking, desc: m[4],
+    ...c, valid: true, type: m[1], scope: m[2] ?? null, breaking, desc: m[4],
   };
 }
 
@@ -75,9 +71,9 @@ export function nextVersion(base, commits, breaking = BREAKING) {
   return fmtVersion(v);
 }
 
-// Commits fora do padrão (merges não contam).
+// Commits fora do padrão (apenas informativo: não afetam versão nem notas).
 export function invalidCommits(commits) {
-  return commits.map(parseCommit).filter((p) => !p.merge && !p.valid);
+  return commits.map(parseCommit).filter((p) => !p.valid);
 }
 
 // Última tag vX.Y.Z (maior versão) de uma lista de nomes de tag.
@@ -183,12 +179,9 @@ function main(argv) {
   } else if (cmd === 'check') {
     if (!arg) throw new Error('Uso: version.mjs check <range>');
     const bad = invalidCommits(readLog(arg));
-    for (const p of bad) console.error(`Fora do padrão: ${p.hash.slice(0, 7)} ${p.subject}`);
-    if (bad.length) {
-      console.error('Use o formato tipo(escopo)!: descrição. Veja docs/versioning.md.');
-      process.exit(1);
-    }
-    console.log('Todos os commits seguem o padrão.');
+    // Utilitário informativo: lista os ignorados e sempre sai com código 0.
+    for (const p of bad) console.log(`Ignorado: ${p.hash.slice(0, 7)} ${p.subject}`);
+    console.log(`${bad.length} commit(s) fora do padrão (ignorados no cálculo e nas notas).`);
   } else if (cmd === 'apply') {
     if (!SEMVER.test(arg ?? '')) throw new Error('Uso: version.mjs apply X.Y.Z');
     applyVersion(arg);

@@ -15,7 +15,7 @@ fix: corrigir travamento ao parar a gravação
 docs: atualizar o README
 ```
 
-`feat` sobe o minor, `fix` sobe o patch, os demais tipos não geram versão. Use `!` (`feat!: ...`) para mudança incompatível. O CI recusa PRs com commits fora do padrão. Valide localmente com `node scripts/version.mjs check origin/dev..HEAD`.
+`feat` sobe o minor, `fix` sobe o patch, os demais tipos não geram versão. Commits fora do padrão são ignorados no cálculo e nas notas, sem erro. Commits com `!` ou `BREAKING CHANGE:` contam como major e são **proibidos sem ordem explícita do dono do projeto** (regra de processo, não validada por CI). Para listar os ignorados: `node scripts/version.mjs check origin/dev..HEAD`.
 
 As regras completas estão em [docs/versioning.md](docs/versioning.md).
 

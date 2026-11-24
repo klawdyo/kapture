@@ -15,21 +15,6 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  # Valida que todos os commits do PR seguem Conventional Commits (docs/versioning.md)
-  commits:
-    name: Commits semânticos
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Validar commits do PR
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
-        run: node scripts/version.mjs check "$BASE..$HEAD"
-
   linux:
     name: Linux (núcleo e front-end)
     runs-on: ubuntu-latest

@@ -44,4 +44,4 @@ A logo oficial (raster 380x380, fundo opaco com grade, recortada da Figura 1 da 
 
 ## Release
 
-O release é automático: o push na `main` (merge da `dev`) executa o `release.yml`, que calcula a versão pelos commits (veja [versioning.md](versioning.md)), roda os testes do `ci.yml`, gera MSI e MSIX, cria a tag `vX.Y.Z` e publica `.msi`, `.msix` e `SHA256SUMS` no GitHub Release com as notas geradas. Sem commits `feat` ou `fix` desde a última tag, nada é publicado. Também pode ser disparado manualmente na `main`.
+O release é automático: o push na `main` (merge da `dev`) executa o `release.yml`, que calcula a versão pelos commits (veja [versioning.md](versioning.md)), roda os testes do `ci.yml`, gera o MSI, cria a tag `vX.Y.Z` e publica `.msi` e `SHA256SUMS` no GitHub Release com as notas geradas. A geração do MSIX está desligada no release (veja [msix-store.md](msix-store.md)). Sem commits `feat`, `fix` ou breaking desde a última tag, nada é publicado. Também pode ser disparado manualmente na `main`.

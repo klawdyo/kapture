@@ -28,9 +28,6 @@ if (-not (Test-Path $Exe)) { throw "Executável não encontrado: $Exe" }
 $parts = @(($Version -split '[-+]')[0].Split('.'))
 while ($parts.Count -lt 3) { $parts += '0' }
 $msixVersion = ($parts[0..2] + '0') -join '.'
-if ([int]$parts[0] -eq 0) {
-  Write-Warning "Versão $msixVersion começa em 0: a Store rejeita Major 0. Use 1.x.y para enviar."
-}
 
 if (-not $IdentityName)         { $IdentityName = "PLACEHOLDER.Cap";            Write-Warning "MSIX_IDENTITY_NAME ausente: usando placeholder." }
 if (-not $Publisher)            { $Publisher = "CN=PLACEHOLDER-PUBLISHER-ID";   Write-Warning "MSIX_PUBLISHER ausente: usando placeholder." }

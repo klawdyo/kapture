@@ -1,7 +1,7 @@
 // Testes das regras de versionamento (docs/versioning.md).
 import { describe, expect, it } from 'vitest';
 import {
-  bumpOf, fmtVersion, generateNotes, invalidCommits, isMerge, lastVersion, nextVersion,
+  bumpOf, fmtVersion, generateNotes, invalidCommits, lastVersion, nextVersion,
   parseCommit, parseLog, parseVersion, setCargoVersion, setJsonVersion,
 } from './version.mjs';
 
@@ -29,25 +29,27 @@ describe('parseCommit', () => {
   it('corpo ausente é aceito', () => {
     expect(parseCommit({ hash: 'a', subject: 'fix: a', parents: [] }).valid).toBe(true);
   });
-  it('merge é reconhecido por pais ou assunto', () => {
-    expect(isMerge(c('x', { parents: ['a', 'b'] }))).toBe(true);
-    expect(isMerge(c('Merge pull request #2 from a/b'))).toBe(true);
-    expect(isMerge({ subject: 'fix: a' })).toBe(false);
-    expect(parseCommit(c('Merge branch dev')).merge).toBe(true);
+  it('merge e revert do git fora do padrão são apenas inválidos', () => {
+    expect(parseCommit(c('Merge branch dev')).valid).toBe(false);
+    expect(parseCommit(c('Revert "feat: x"')).valid).toBe(false);
   });
 });
 
 describe('nextVersion', () => {
-  it('exemplo da spec: feat zera patch e soma sequencial', () => {
-    const log = [c('fix: a'), c('fix: b'), c('feat: c'), c('fix: d'), c('docs: e'), c('feat(x): f'), c('chore: g')];
+  it('exemplo da spec: feat zera patch, breaking zera minor e patch', () => {
+    const log = [
+      c('fix: a'), c('fix: b'), c('feat: c'), c('fix: d'), c('docs: e'), c('feat(x): f'), c('chore: g'),
+      c('refactor!: h'), c('fix: i'),
+    ];
     // 1.4.2 -> fix 1.4.3 -> fix 1.4.4 -> feat 1.5.0 -> fix 1.5.1 -> feat 1.6.0
-    expect(nextVersion('1.4.2', log)).toBe('1.6.0');
+    // -> breaking 2.0.0 -> fix 2.0.1
+    expect(nextVersion('1.4.2', log)).toBe('2.0.1');
   });
   it('a ordem importa: fix depois de feat sobe patch, feat depois de fix zera', () => {
     expect(nextVersion('1.0.0', [c('feat: a'), c('fix: b')])).toBe('1.1.1');
     expect(nextVersion('1.0.0', [c('fix: b'), c('feat: a')])).toBe('1.1.0');
   });
-  it('merge é ignorado, commits reais contam', () => {
+  it('commit de merge sem padrão é ignorado, commits reais contam', () => {
     const log = [c('feat: a'), c('Merge pull request #1', { parents: ['a', 'b'] }), c('fix: b')];
     expect(nextVersion('0.1.0', log)).toBe('0.2.1');
   });
@@ -61,10 +63,12 @@ describe('nextVersion', () => {
   it('commits fora do padrão são ignorados no cálculo', () => {
     expect(nextVersion('1.0.0', [c('mexi em coisa'), c('fix: a')])).toBe('1.0.1');
   });
-  it('breaking: minor por padrão, configurável', () => {
+  it('breaking: major por padrão (uma vez por commit), configurável', () => {
     const log = [c('fix: a'), c('refactor!: b')];
-    expect(nextVersion('0.3.0', log)).toBe('0.4.0');
-    expect(nextVersion('0.3.0', log, 'major')).toBe('1.0.0');
+    expect(nextVersion('0.3.0', log)).toBe('1.0.0');
+    expect(nextVersion('1.2.3', [c('feat!: x')])).toBe('2.0.0');
+    expect(nextVersion('1.2.3', [c('fix: x', { body: 'BREAKING CHANGE: y' })])).toBe('2.0.0');
+    expect(nextVersion('0.3.0', log, 'minor')).toBe('0.4.0');
     expect(nextVersion('0.3.0', log, 'none')).toBe('0.3.1');
     expect(bumpOf({ valid: true, type: 'docs', breaking: false })).toBeNull();
     expect(bumpOf({ valid: false })).toBeNull();
@@ -85,9 +89,9 @@ describe('versões e tags', () => {
 });
 
 describe('invalidCommits', () => {
-  it('lista só os fora do padrão, sem merges', () => {
+  it('lista os fora do padrão (informativo)', () => {
     const bad = invalidCommits([c('feat: a'), c('ruim'), c('Merge x', { parents: ['a', 'b'] })]);
-    expect(bad.map((p) => p.subject)).toEqual(['ruim']);
+    expect(bad.map((p) => p.subject)).toEqual(['ruim', 'Merge x']);
   });
 });
 

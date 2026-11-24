@@ -18,7 +18,7 @@ Baixe o instalador `.msi` na aba **Releases** do repositório e execute-o.
 
 > **Aviso:** o MSI não é assinado digitalmente. O Windows SmartScreen pode exibir um alerta; clique em "Mais informações" e depois em "Executar assim mesmo". Confira o `SHA256SUMS` publicado junto, se quiser verificar a integridade.
 
-Também é publicado um `.msix` sem assinatura, destinado ao envio à Microsoft Store.
+O `.msix` para a Microsoft Store está desligado por enquanto (veja [docs/msix-store.md](docs/msix-store.md)).
 
 ## Decisão técnica: sem FFmpeg
 
