@@ -11,7 +11,7 @@ withDefaults(defineProps<{ value: number; segs?: number; hot?: number }>(), { se
 
 <style scoped>
 .meter { display: inline-flex; align-items: center; gap: 2px; height: 12px; }
-i { width: 3px; height: 100%; border-radius: 1px; background: rgba(255, 255, 255, 0.2); }
+i { pointer-events: none; width: 3px; height: 100%; border-radius: 1px; background: rgba(255, 255, 255, 0.2); }
 i.on { background: var(--ok); }
 i.on.hot { background: var(--red); }
 </style>

@@ -142,7 +142,7 @@ describe('useToolbar', () => {
     t.toggleCfg()
     await t.toggle() // grava: pílula
     await flush()
-    expect(fits().at(-1)).toEqual({ w: 260, h: 56 })
+    expect(fits().at(-1)).toEqual({ w: 150, h: 48 })
     b.fail = 'sem janela'
     t.toggleCfg()
     t.toggleCfg()
@@ -221,6 +221,61 @@ describe('useRegion', () => {
     ])
     r.dispose()
   })
+  it('move por dentro, redimensiona pelas alças e desenha outra por fora', () => {
+    const r = useRegion()
+    r.down(100, 100)
+    r.move(300, 250)
+    r.up()
+    expect(r.cur.value).toBe('crosshair')
+    r.move(200, 200) // dentro: mover
+    expect(r.cur.value).toBe('move')
+    r.down(200, 200)
+    expect(r.cur.value).toBe('move')
+    expect(r.act.value).toBe('move')
+    r.move(230, 190)
+    expect(r.css.value).toEqual({ x: 130, y: 90, w: 200, h: 150 })
+    r.move(5000, 5000) // limite da tela
+    expect(r.css.value).toEqual({ x: 824, y: 618, w: 200, h: 150 })
+    r.up()
+    r.move(824 + 200, 618 + 150) // alça sudeste (ponto preso à tela)
+    expect(r.cur.value).toBe('nwse-resize')
+    r.down(1024, 768)
+    expect(r.act.value).toBe('se')
+    r.move(1000, 700)
+    expect(r.css.value).toEqual({ x: 824, y: 618, w: 176, h: 82 })
+    expect(r.below.value).toBe(true)
+    r.up()
+    r.down(10, 10) // fora: nova seleção
+    expect(r.act.value).toBe(null)
+    expect(r.cur.value).toBe('crosshair')
+    r.move(60, 60)
+    r.up()
+    expect(r.css.value).toEqual({ x: 10, y: 10, w: 50, h: 50 })
+    expect(r.below.value).toBe(true)
+  })
+  it('setas movem 1 px (Shift 10) e Alt redimensiona', async () => {
+    const r = useRegion()
+    const k = (key: string, o: KeyboardEventInit = {}) => {
+      const e = new KeyboardEvent('keydown', { key, cancelable: true, ...o })
+      r.key(e)
+      return e
+    }
+    expect(k('ArrowLeft').defaultPrevented).toBe(false) // sem seleção
+    r.down(100, 100)
+    r.move(200, 200)
+    r.up()
+    expect(k('ArrowRight').defaultPrevented).toBe(true)
+    k('ArrowDown', { shiftKey: true })
+    expect(r.css.value).toEqual({ x: 101, y: 110, w: 100, h: 100 })
+    k('ArrowRight', { altKey: true })
+    k('ArrowDown', { altKey: true, shiftKey: true })
+    expect(r.css.value).toEqual({ x: 101, y: 110, w: 101, h: 110 })
+    k('ArrowLeft', { altKey: true, shiftKey: true })
+    expect(r.css.value).toEqual({ x: 101, y: 110, w: 91, h: 110 })
+    k('constructor')
+    expect(r.css.value.w).toBe(91)
+    await flush()
+  })
   it('descarta seleção minúscula e Enter sem seleção não envia', async () => {
     const r = useRegion()
     r.down(10, 10)
@@ -242,47 +297,74 @@ describe('useRegion', () => {
 
 describe('useUpdate', () => {
   let u: FakeUpdates
+  const rel = 'https://github.com/klawdyo/kapture/releases/tag/v0.2.0'
   beforeEach(() => {
     u = new FakeUpdates()
     setPorts({ backend: b, media: m, updates: u })
   })
   const logs = () => b.calls.filter((c) => c[0] === 'logUi').map((c) => c[1])
 
-  it('com atualização: guarda dados e registra no log', async () => {
-    u.res = { version: '0.2.0', url: 'https://github.com/klawdyo/kapture/releases/tag/v0.2.0' }
+  it('ciclo automático: verifica, baixa com percentual e pede reinício', async () => {
     const t = useUpdate()
     await t.init()
-    expect(u.calls).toEqual(['0.1.0'])
     expect(t.cur.value).toBe('0.1.0')
-    expect(t.has.value).toBe(true)
-    expect(logs()).toEqual([{ lvl: 'info', msg: '[update] atualização disponível v0.2.0' }])
+    expect(b.calls.map((c) => c[0])).toEqual(['version', 'updateStart'])
+    expect(t.phase.value).toBe('idle')
+    expect(t.text.value).toBe('')
+    b.emit('upd', { kind: 'checking' })
+    expect(t.text.value).toBe('Verificando atualizações…')
+    b.emit('upd', { kind: 'downloading', pct: 0 })
+    expect(t.text.value).toBe('Atualizando…')
+    b.emit('upd', { kind: 'downloading', pct: 42 })
+    expect(t.phase.value).toBe('downloading')
+    expect(t.text.value).toBe('Atualizando… 42%')
+    b.emit('upd', { kind: 'ready', version: '0.2.0' })
+    expect(t.text.value).toBe('Reinicie para atualizar')
+    await t.apply()
+    expect(b.calls.at(-1)).toEqual(['updateApply', undefined])
+    expect(u.calls).toEqual([]) // o GitHub não é consultado no ciclo automático
   })
-  it('sem atualização: nada aparece', async () => {
+  it('sem atualização ou erro do backend: o texto some', async () => {
     const t = useUpdate()
     await t.init()
-    expect(t.has.value).toBe(false)
-    expect(logs()).toEqual([{ lvl: 'info', msg: '[update] sem atualização' }])
+    b.emit('upd', { kind: 'checking' })
+    b.emit('upd', { kind: 'none' })
+    expect(t.phase.value).toBe('idle')
+    b.emit('upd', { kind: 'downloading', pct: 5 })
+    b.emit('upd', { kind: 'err' })
+    expect(t.phase.value).toBe('idle')
+    b.emit('upd', { kind: 'idle' })
+    expect(t.phase.value).toBe('idle')
   })
-  it('falha de rede: nada aparece e vai ao log como warn', async () => {
-    u.fail = new Error('sem rede')
+  it('falha ao reiniciar vai ao log', async () => {
     const t = useUpdate()
     await t.init()
-    expect(t.has.value).toBe(false)
-    expect(logs()).toEqual([{ lvl: 'warn', msg: '[update] falha ao verificar: sem rede' }])
-  })
-  it('falha do próprio log é descartada', async () => {
-    b.fail = 'log quebrado'
-    const t = useUpdate()
-    await t.init() // version() falha: cai no catch, e o log também falha
+    b.fail = 'sem Update.exe'
+    await t.apply()
     await flush()
-    expect(t.has.value).toBe(false)
+    expect(b.calls.at(-1)).toEqual(['logUi', { lvl: 'warn', msg: '[update] falha ao reiniciar: sem Update.exe' }])
   })
-  it('abrir, fechar (Depois) e baixar', async () => {
-    u.res = { version: '0.2.0', url: 'https://github.com/klawdyo/kapture/releases/tag/v0.2.0' }
+  it('dispose cancela a assinatura', async () => {
+    const t = useUpdate()
+    t.dispose() // antes de assinar: nada acontece
+    await t.init()
+    expect(b.subs('upd')).toBe(1)
+    t.dispose()
+    expect(b.subs('upd')).toBe(0)
+  })
+  it('fallback com atualização: bolinha, Depois e Baixar', async () => {
+    u.res = { version: '0.2.0', url: rel }
     const t = useUpdate()
     await t.download() // sem atualização: não faz nada
     expect(b.calls.some((c) => c[0] === 'openUrl')).toBe(false)
     await t.init()
+    b.emit('upd', { kind: 'fallback' })
+    await flush()
+    expect(u.calls).toEqual(['0.1.0'])
+    expect(t.has.value).toBe(true)
+    expect(t.phase.value).toBe('available')
+    expect(t.text.value).toBe('Atualização disponível')
+    expect(logs()).toEqual([{ lvl: 'info', msg: '[update] atualização disponível v0.2.0' }])
     t.toggle()
     expect(t.open.value).toBe(true)
     t.later()
@@ -291,12 +373,51 @@ describe('useUpdate', () => {
     t.toggle()
     await t.download()
     expect(t.open.value).toBe(false)
-    expect(b.calls).toContainEqual(['openUrl', u.res.url])
+    expect(b.calls).toContainEqual(['openUrl', rel])
   })
-  it('falha ao abrir o release vai ao log', async () => {
-    u.res = { version: '0.2.0', url: 'https://github.com/klawdyo/kapture/releases/tag/v0.2.0' }
+  it('fallback sem atualização: nada aparece', async () => {
     const t = useUpdate()
     await t.init()
+    b.emit('upd', { kind: 'fallback' })
+    expect(t.phase.value).toBe('checking') // consultando o GitHub
+    await flush()
+    expect(t.phase.value).toBe('idle')
+    expect(logs()).toEqual([{ lvl: 'info', msg: '[update] sem atualização' }])
+  })
+  it('fallback com falha de rede: nada aparece e vai ao log como warn', async () => {
+    u.fail = new Error('sem rede')
+    const t = useUpdate()
+    await t.init()
+    b.emit('upd', { kind: 'fallback' })
+    await flush()
+    expect(t.phase.value).toBe('idle')
+    expect(t.has.value).toBe(false)
+    expect(logs()).toEqual([{ lvl: 'warn', msg: '[update] falha ao verificar: sem rede' }])
+  })
+  it('backend sem ciclo automático: usa o aviso simples', async () => {
+    const orig = b.updateStart.bind(b)
+    b.updateStart = async () => { await orig(); throw new Error('comando inexistente') }
+    u.res = { version: '0.2.0', url: rel }
+    const t = useUpdate()
+    await t.init()
+    expect(t.phase.value).toBe('available')
+    expect(logs()[0]).toEqual({ lvl: 'warn', msg: '[update] ciclo automático indisponível: comando inexistente' })
+  })
+  it('sem a versão instalada: nada aparece e o log falho é descartado', async () => {
+    b.fail = 'log quebrado'
+    const t = useUpdate()
+    await t.init() // version() falha: não assina nem consulta
+    await flush()
+    expect(t.phase.value).toBe('idle')
+    expect(t.has.value).toBe(false)
+    expect(b.subs('upd')).toBe(0)
+  })
+  it('falha ao abrir o release vai ao log', async () => {
+    u.res = { version: '0.2.0', url: rel }
+    const t = useUpdate()
+    await t.init()
+    b.emit('upd', { kind: 'fallback' })
+    await flush()
     b.fail = 'sem navegador'
     await t.download()
     await flush()

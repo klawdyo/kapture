@@ -1,32 +1,164 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/* Fonte Rubik hospedada localmente: mesma tipografia dos pôsteres do kapture, sem requisições externas. */
+@font-face {
+  font-family: "Rubik";
+  src: url("/fonts/Rubik-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Rubik";
+  src: url("/fonts/Rubik-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme static {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
-  /* Vermelho de gravação: só como destaque, nunca como cor de texto. */
-  --color-rec: #ef4444;
+  --font-display: "Rubik", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Segoe UI", ui-sans-serif, system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Cascadia Mono", ui-monospace, "SF Mono", Consolas, monospace;
+  /* Vermelho de gravação: reservado à marca e ao ponto REC. */
+  --color-rec: #f93847;
+}
+
+/* Paleta do mundo visual do kapture: papel ótico no claro, grafite de visor no escuro. */
+:root {
+  --brand: #f93847;
+  --brand-ink: #c81e2d;
+  --surface-page: #f6f7f9;
+  --surface-elevated: #ffffff;
+  --surface-band: #1a1e24;
+  --ink-primary: #14181f;
+  --ink-secondary: #4a5362;
+  --ink-muted: #596374;
+  --line-hairline: rgba(20, 24, 31, 0.1);
+  --line-grid: rgba(20, 24, 31, 0.055);
+  --ui-primary: var(--ui-color-neutral-900);
+}
+
+.dark {
+  --surface-page: #15181e;
+  --surface-elevated: #1c2028;
+  --surface-band: #0e1116;
+  --ink-primary: #f2f4f8;
+  --ink-secondary: #b4bccb;
+  --ink-muted: #939cad;
+  --line-hairline: rgba(242, 244, 248, 0.11);
+  --line-grid: rgba(242, 244, 248, 0.045);
+  --ui-primary: var(--ui-color-neutral-100);
+}
+
+/* Superfície base e comportamento global do navegador. */
+html {
+  background-color: var(--surface-page);
+  color: var(--ink-primary);
+  caret-color: var(--brand);
+}
+
+body {
+  background-color: var(--surface-page);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
 
-section[id], main[id] { scroll-margin-top: 5rem; }
+section[id], main[id] { scroll-margin-top: 5.25rem; }
 
-/* Link de texto com sublinhado visível (AA: não depender só de cor). */
+/* Grade sutil com linhas horizontais e verticais herdadas diretamente das artes oficiais do kapture. */
+.brand-grid {
+  background-image:
+    linear-gradient(to right, var(--line-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line-grid) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+/* Tipografia de destaque com Rubik e proporções equilibradas. */
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Wordmark oficial: sempre minúsculo, em Rubik bold na cor da bolinha central (#F93847).
+   Tamanho mínimo 20px negrito garante contraste WCAG AA para texto grande sobre claro e escuro. */
+.wordmark {
+  font-family: var(--font-display);
+  color: var(--brand);
+  font-size: 1.3rem;
+  line-height: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Elevação física com deslocamento real e desfoque suave para o pôster e capturas do app. */
+.poster-elevation {
+  box-shadow:
+    0 24px 48px -16px rgba(15, 20, 28, 0.22),
+    0 8px 20px -8px rgba(15, 20, 28, 0.14),
+    0 0 0 1px rgba(20, 24, 31, 0.08);
+}
+
+.dark .poster-elevation {
+  box-shadow:
+    0 28px 56px -14px rgba(0, 0, 0, 0.65),
+    0 10px 24px -8px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.09);
+}
+
+.app-elevation {
+  box-shadow:
+    0 20px 44px -12px rgba(10, 14, 22, 0.34),
+    0 6px 16px -6px rgba(10, 14, 22, 0.22);
+}
+
+/* Teclas táteis para o atalho global Ctrl+Shift+R. */
+.keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 1.85rem;
+  padding: 0 0.55rem;
+  border-radius: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+  background: var(--surface-elevated);
+  color: var(--ink-primary);
+  border: 1px solid var(--line-hairline);
+  box-shadow: 0 2px 0 rgba(20, 24, 31, 0.12);
+}
+
+.dark .keycap {
+  background: #232832;
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+}
+
+/* Links com sublinhado nítido e foco acessível coerente com a paleta. */
 .link {
   text-decoration: underline;
-  text-underline-offset: 0.2em;
+  text-underline-offset: 0.24em;
   text-decoration-thickness: 1px;
+  transition: text-decoration-thickness 160ms ease, color 160ms ease;
 }
 .link:hover { text-decoration-thickness: 2px; }
-.link:focus-visible, .skip-link:focus-visible {
-  outline: 2px solid var(--ui-color-neutral-900);
+
+.link:focus-visible,
+.skip-link:focus-visible,
+.focus-ring:focus-visible {
+  outline: 2px solid var(--brand);
   outline-offset: 3px;
   border-radius: 4px;
 }
-.dark .link:focus-visible, .dark .skip-link:focus-visible { outline-color: var(--ui-color-neutral-100); }
 
 .skip-link {
   position: absolute;
@@ -35,30 +167,135 @@ section[id], main[id] { scroll-margin-top: 5rem; }
   z-index: 100;
   padding: 0.6rem 1rem;
   border-radius: 0.5rem;
-  background: var(--ui-bg-inverted);
-  color: var(--ui-bg);
+  background: var(--ink-primary);
+  color: var(--surface-page);
   font-weight: 600;
 }
 .skip-link:focus { top: 0.75rem; }
 
+/* Ponto REC pulsando de forma discreta no indicador vivo. */
 @keyframes rec-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .rec-dot { animation: rec-pulse 1.6s ease-in-out infinite; }
+  .rec-dot { animation: rec-pulse 1.8s ease-in-out infinite; }
 }
 
-/* Nome do produto: vermelho da bolinha da logo (#F93847, amostrado de assets/logo_light_transparent.png).
-   Token único, usado SÓ no wordmark "kapture". Contraste WCAG: 3,69:1 sobre branco e 5,39:1 sobre zinc-950.
-   No claro fica abaixo de 4,5:1 (AA de texto normal), então o wordmark é sempre texto grande
-   (20 px em negrito, acima de 18,66 px bold), que exige 3:1. Não usar em texto pequeno. */
-:root { --brand: #f93847; }
-.wordmark { color: var(--brand); font-size: 1.25rem; line-height: 1.75rem; font-weight: 700; letter-spacing: -0.01em; }
+/* Seleção de texto e barra de rolagem integradas à identidade visual. */
+::selection {
+  background: #1a1e24;
+  color: #f6f7f9;
+}
+.dark ::selection {
+  background: #f2f4f8;
+  color: #15181e;
+}
 
-/* Primário grafite com contraste alto (o padrão neutral-500 ficava lavado). */
-:root { --ui-primary: var(--ui-color-neutral-900); }
-.dark { --ui-primary: var(--ui-color-neutral-100); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--surface-page); }
+::-webkit-scrollbar-thumb {
+  background: rgba(90, 99, 116, 0.32);
+  border-radius: 999px;
+  border: 2px solid var(--surface-page);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(90, 99, 116, 0.52); }
 
-::selection { background: var(--ui-color-neutral-900); color: var(--ui-color-neutral-50); }
-.dark ::selection { background: var(--ui-color-neutral-100); color: var(--ui-color-neutral-900); }
+/* Tokens e estilos não-escopados da demonstração do app, sincronizados com .dark no <html>. */
+.kapture-stage {
+  --bg: rgba(255, 255, 255, 0.94);
+  --bd: rgba(20, 24, 31, 0.14);
+  --fg: #14181f;
+  --mut: #525c6e;
+  --hov: rgba(20, 24, 31, 0.08);
+  --fld: rgba(20, 24, 31, 0.05);
+  --ok: #16a34a;
+  --red: #ef4444;
+  --red2: #dc2626;
+  --brand: #f93847;
+  --sep: rgba(20, 24, 31, 0.12);
+  --pill-bg: rgba(255, 255, 255, 0.96);
+  --bar-shadow: 0 20px 44px -14px rgba(15, 20, 28, 0.2), 0 6px 16px -6px rgba(15, 20, 28, 0.1);
+}
+
+.dark .kapture-stage {
+  --bg: rgba(26, 33, 48, 0.94);
+  --bd: rgba(255, 255, 255, 0.16);
+  --fg: #f1f5f9;
+  --mut: #b4bfd0;
+  --hov: rgba(255, 255, 255, 0.12);
+  --fld: rgba(255, 255, 255, 0.09);
+  --ok: #22c55e;
+  --red: #ef4444;
+  --red2: #dc2626;
+  --brand: #f93847;
+  --sep: rgba(255, 255, 255, 0.14);
+  --pill-bg: rgba(26, 33, 48, 0.96);
+  --bar-shadow: 0 22px 48px -14px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Remove seta nativa duplicada do navegador e alinha verticalmente o texto dos selects do app. */
+.kapture-stage .sel {
+  align-items: center;
+}
+
+.kapture-stage .sel select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: none !important;
+  display: block;
+  height: 30px;
+  line-height: 28px;
+  padding: 0 28px 0 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-color: var(--bd);
+}
+
+.kapture-stage .sel select::picker-icon {
+  display: none !important;
+}
+
+.kapture-stage .sel select::-ms-expand {
+  display: none;
+}
+
+.kapture-stage .sel select option {
+  background: #ffffff;
+  color: #14181f;
+}
+
+.dark .kapture-stage .sel select option {
+  background: #232c3d;
+  color: #f1f5f9;
+}
+
+.kapture-stage .seg {
+  background: rgba(20, 24, 31, 0.045);
+  border-color: rgba(20, 24, 31, 0.1);
+}
+
+.kapture-stage .seg .btn.on {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(20, 24, 31, 0.12), inset 0 0 0 1px rgba(20, 24, 31, 0.08);
+}
+
+.dark .kapture-stage .seg {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark .kapture-stage .seg .btn.on {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.kapture-stage .meter i {
+  background: rgba(20, 24, 31, 0.18);
+}
+
+.dark .kapture-stage .meter i {
+  background: rgba(255, 255, 255, 0.2);
+}

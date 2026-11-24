@@ -3,7 +3,7 @@
 ## Branches
 
 - Trabalhe a partir da `dev` e abra PRs para ela.
-- A `main` só recebe releases, por merge da `dev`. O push na `main` dispara o release (tag, versão e instaladores).
+- A `main` só recebe releases, por merge da `dev`. O push na `main` dispara o release (tag, versão e o `kapture.exe`).
 
 ## Commits semânticos
 

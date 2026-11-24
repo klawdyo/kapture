@@ -21,3 +21,20 @@ pub fn os_version() -> String {
         "desconhecida".to_string()
     }
 }
+
+/// Mostra uma caixa de erro do Windows (o app não tem console nem janela nessa hora).
+pub fn alert(title: &str, msg: &str) {
+    use windows::core::PCWSTR;
+    use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
+    let t: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
+    let m: Vec<u16> = msg.encode_utf16().chain(std::iter::once(0)).collect();
+    // SAFETY: os dois buffers terminam em zero e vivem até o fim da chamada.
+    unsafe {
+        MessageBoxW(
+            None,
+            PCWSTR(m.as_ptr()),
+            PCWSTR(t.as_ptr()),
+            MB_OK | MB_ICONERROR,
+        );
+    }
+}

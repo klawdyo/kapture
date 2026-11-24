@@ -50,7 +50,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   build:
-    name: Instaladores (Velopack e MSI)
+    name: Executável (kapture.exe)
     needs: [version, tests]
     # Com os testes pulados (push na main), o build segue; se rodaram e falharam, não publica.
     if: ${{ !cancelled() && needs.version.outputs.publish == 'true' && (needs.tests.result == 'success' || needs.tests.result == 'skipped') }}
@@ -77,26 +77,15 @@ jobs:
         shell: pwsh
         run: node scripts/version.mjs apply "${{ needs.version.outputs.version }}"
 
-      - name: Gerar MSI (WiX)
+      # Só o exe solto: sem bundle (sem instalador). O ícone vem de icons/icon.ico, embutido
+      # pelo tauri-build no kapture.exe.
+      - name: Compilar o kapture.exe
         shell: pwsh
-        run: npx tauri build --bundles msi
-
-      # Instalador moderno (Velopack): Setup.exe one-click, por usuário (%LOCALAPPDATA%\kapture),
-      # sem admin. Usa o kapture.exe que o passo do MSI acabou de compilar. O vpk é instalado
-      # na mesma versão do crate velopack (Cargo.lock). Escreve os tamanhos no resumo do job.
-      # REMOÇÃO DO MSI (quando o Setup.exe for aprovado): apague o passo "Gerar MSI (WiX)",
-      # troque o comando dele por `npx tauri build --no-bundle`, tire `dist/*.msi` daqui e de
-      # `files`, e remova a cópia do MSI no passo "Reunir artefatos".
-      - name: Gerar instalador Velopack
-        shell: pwsh
-        run: ./scripts/pack-velopack.ps1 -Version "${{ needs.version.outputs.version }}"
+        run: npx tauri build --no-bundle
 
       # MSIX desligado até a identidade da Store e as imagens/logo estarem prontas.
       # Para religar, descomente este passo e a linha dist/*.msix em files (docs/msix-store.md).
-      # - name: Gerar exe para o MSIX
-      #   shell: pwsh
-      #   run: npx tauri build --no-bundle
-      #
+      # O exe já foi compilado no passo anterior.
       # - name: Gerar MSIX (MakeAppx)
       #   continue-on-error: true
       #   shell: pwsh
@@ -111,25 +100,21 @@ jobs:
       #     -Exe target/release/kapture.exe
       #     -Out dist/kapture-${{ needs.version.outputs.version }}-x64.msix
 
-      - name: Reunir artefatos, tamanhos e SHA256
+      - name: Reunir o exe, tamanho e SHA256
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
-          Get-ChildItem target/release/bundle/msi/*.msi | Copy-Item -Destination dist
-          # Velopack: Setup, pacotes (completo e delta, se houver versão anterior), Portable e índices
-          Get-ChildItem Releases/* -Include *-Setup.exe, *.nupkg, *-Portable.zip, releases.win.json, assets.win.json |
-            Copy-Item -Destination dist
+          Copy-Item target/release/kapture.exe dist
           Get-ChildItem dist | ForEach-Object {
             "{0}: {1:N2} MB" -f $_.Name, ($_.Length / 1MB)
           }
-          Get-ChildItem dist -File | ForEach-Object {
-            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
-          } | Set-Content dist/SHA256SUMS -Encoding ascii
+          "{0}  {1}" -f (Get-FileHash dist/kapture.exe -Algorithm SHA256).Hash.ToLower(), 'kapture.exe' |
+            Set-Content dist/SHA256SUMS -Encoding ascii
           Get-Content dist/SHA256SUMS
 
       - uses: actions/upload-artifact@v4
         with:
-          name: instaladores
+          name: kapture-exe
           path: dist/*
 
       # Cria a tag vX.Y.Z no commit da main e o Release com as notas geradas
@@ -142,10 +127,5 @@ jobs:
           body_path: RELEASE_NOTES.md
           # MSIX desligado: para religar, inclua a linha dist/*.msix na lista abaixo.
           files: |
-            dist/*.msi
-            dist/*-Setup.exe
-            dist/*.nupkg
-            dist/*-Portable.zip
-            dist/releases.win.json
-            dist/assets.win.json
+            dist/kapture.exe
             dist/SHA256SUMS

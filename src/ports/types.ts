@@ -1,5 +1,5 @@
 // PORTAS (interfaces) — única fronteira entre a UI e o mundo externo.
-import type { Devices, RecCfg, RecState, Region, Targets, Upd } from '../domain/types'
+import type { Devices, RecCfg, RecState, Region, Targets, Upd, UpdSt } from '../domain/types'
 
 /** Função que cancela uma assinatura de evento. */
 export type Off = () => void
@@ -31,6 +31,10 @@ export interface Backend {
   version(): Promise<string>
   /** Abre no navegador uma página de release (o backend recusa outras URLs). */
   openUrl(url: string): Promise<void>
+  /** Inicia o ciclo de atualização no backend (uma vez; o resultado chega por `onUpdate`). */
+  updateStart(): Promise<void>
+  /** Reinicia o app aplicando a atualização já baixada. */
+  updateApply(): Promise<void>
   /** Minimiza a janela atual. */
   minimize(): Promise<void>
   /** Fecha a janela atual (a da barra encerra o app). */
@@ -41,6 +45,7 @@ export interface Backend {
   fitSquare(size: number): Promise<void>
   onMic(cb: (level: number) => void): Promise<Off>
   onState(cb: (s: RecState) => void): Promise<Off>
+  onUpdate(cb: (s: UpdSt) => void): Promise<Off>
   onHotkey(cb: () => void): Promise<Off>
   onResize(cb: (w: number, h: number) => void): Promise<Off>
 }

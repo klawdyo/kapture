@@ -50,6 +50,15 @@ pub fn install_panic_hook() {
             &bt,
         );
         get().error(&text);
+        // Sem isto o app sumia em silêncio: avisa o usuário e diz onde está o log.
+        #[cfg(windows)]
+        crate::adapters::win::alert(
+            "kapture",
+            &format!(
+                "O kapture encontrou um erro e vai fechar.\n\nO detalhe foi salvo em:\n{}",
+                dir().join("kapture.log").display()
+            ),
+        );
     }));
 }
 

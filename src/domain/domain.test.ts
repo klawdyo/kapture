@@ -5,9 +5,73 @@ import { pickCam } from './cam'
 import { detail, msg } from './err'
 import { fmtError, fmtReject, fmtVue } from './log'
 import { idle, isActive, isPaused } from './rec'
-import { big, label, MIN, norm, phys } from './rect'
+import { big, cursor, HANDLES, hit, label, MIN, norm, phys, pin, resize, room, shift } from './rect'
 import { BAR, barSize, EXTRA_H, fit, PILL } from './size'
 import { fmt } from './time'
+
+describe('rect: alças, mover e redimensionar', () => {
+  const r = { x: 100, y: 100, w: 200, h: 100 }
+  const b = { w: 800, h: 600 }
+  it('hit-test: cantos, meios, interior e fora', () => {
+    expect(hit(r, { x: 101, y: 99 })).toBe('nw')
+    expect(hit(r, { x: 299, y: 99 })).toBe('ne')
+    expect(hit(r, { x: 101, y: 201 })).toBe('sw')
+    expect(hit(r, { x: 301, y: 201 })).toBe('se')
+    expect(hit(r, { x: 200, y: 98 })).toBe('n')
+    expect(hit(r, { x: 190, y: 202 })).toBe('s')
+    expect(hit(r, { x: 98, y: 150 })).toBe('w')
+    expect(hit(r, { x: 302, y: 140 })).toBe('e')
+    expect(hit(r, { x: 150, y: 120 })).toBe('move')
+    expect(hit(r, { x: 150, y: 101 })).toBe('move') // perto do topo, fora do meio
+    expect(hit(r, { x: 150, y: 150 })).toBe('move')
+    expect(hit(r, { x: 500, y: 500 })).toBe(null)
+    expect(hit(r, { x: 150, y: 80 })).toBe(null)
+    expect(hit(r, { x: 80, y: 120 })).toBe(null)
+    expect(hit(r, { x: 150, y: 300 })).toBe(null)
+    expect(HANDLES).toHaveLength(8)
+  })
+  it('cursor por alvo', () => {
+    expect(cursor(null)).toBe('crosshair')
+    expect(cursor('move')).toBe('move')
+    expect(cursor('n')).toBe('ns-resize')
+    expect(cursor('s')).toBe('ns-resize')
+    expect(cursor('e')).toBe('ew-resize')
+    expect(cursor('w')).toBe('ew-resize')
+    expect(cursor('nw')).toBe('nwse-resize')
+    expect(cursor('se')).toBe('nwse-resize')
+    expect(cursor('ne')).toBe('nesw-resize')
+    expect(cursor('sw')).toBe('nesw-resize')
+  })
+  it('prende ponto e move dentro da tela', () => {
+    expect(pin({ x: -5, y: 900 }, b)).toEqual({ x: 0, y: 600 })
+    expect(pin({ x: 5, y: 6 }, b)).toEqual({ x: 5, y: 6 })
+    expect(shift(r, 10, -20, b)).toEqual({ x: 110, y: 80, w: 200, h: 100 })
+    expect(shift(r, -500, -500, b)).toEqual({ x: 0, y: 0, w: 200, h: 100 })
+    expect(shift(r, 900, 900, b)).toEqual({ x: 600, y: 500, w: 200, h: 100 })
+  })
+  it('redimensiona por cada alça, com mínimo e limites', () => {
+    expect(resize(r, 'e', 20, 99, b)).toEqual({ x: 100, y: 100, w: 220, h: 100 })
+    expect(resize(r, 'w', 20, 99, b)).toEqual({ x: 120, y: 100, w: 180, h: 100 })
+    expect(resize(r, 'n', 99, 20, b)).toEqual({ x: 100, y: 120, w: 200, h: 80 })
+    expect(resize(r, 's', 99, 20, b)).toEqual({ x: 100, y: 100, w: 200, h: 120 })
+    expect(resize(r, 'nw', -10, -10, b)).toEqual({ x: 90, y: 90, w: 210, h: 110 })
+    expect(resize(r, 'ne', 10, -10, b)).toEqual({ x: 100, y: 90, w: 210, h: 110 })
+    expect(resize(r, 'sw', -10, 10, b)).toEqual({ x: 90, y: 100, w: 210, h: 110 })
+    expect(resize(r, 'se', 10, 10, b)).toEqual({ x: 100, y: 100, w: 210, h: 110 })
+    // mínimo 16x16 (sem inverter o lado)
+    expect(resize(r, 'e', -500, 0, b)).toEqual({ x: 100, y: 100, w: MIN, h: 100 })
+    expect(resize(r, 'w', 500, 0, b)).toEqual({ x: 284, y: 100, w: MIN, h: 100 })
+    expect(resize(r, 's', 0, -500, b)).toEqual({ x: 100, y: 100, w: 200, h: MIN })
+    expect(resize(r, 'n', 0, 500, b)).toEqual({ x: 100, y: 184, w: 200, h: MIN })
+    // limites da tela
+    expect(resize(r, 'nw', -500, -500, b)).toEqual({ x: 0, y: 0, w: 300, h: 200 })
+    expect(resize(r, 'se', 900, 900, b)).toEqual({ x: 100, y: 100, w: 700, h: 500 })
+  })
+  it('etiqueta cabe abaixo?', () => {
+    expect(room(r, b)).toBe(true)
+    expect(room({ x: 0, y: 0, w: 10, h: 580 }, b)).toBe(false)
+  })
+})
 
 describe('rect', () => {
   it('normaliza arrasto em qualquer direção', () => {

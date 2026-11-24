@@ -5,10 +5,12 @@
 
 mod cam;
 mod events;
+mod noupd;
 mod picker;
 
 pub use cam::TauriCam;
 pub use events::TauriEvents;
+pub use noupd::NoUpdater;
 pub use picker::TauriPicker;
 
 #[cfg(windows)]

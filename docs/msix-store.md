@@ -4,7 +4,7 @@ Este guia cobre o cadastro no Partner Center, de onde vem cada valor do manifest
 
 ## Estado atual
 
-A geração do MSIX está **desligada** no `.github/workflows/release.yml` (passos comentados), até a identidade da Store e as imagens/logo estarem prontas. O release publica só o MSI.
+A geração do MSIX está **desligada** no `.github/workflows/release.yml` (passos comentados), até a identidade da Store e as imagens/logo estarem prontas. O release publica só o `kapture.exe` e o `SHA256SUMS`.
 
 Para religar: descomente, no job de build, os passos "Gerar exe para o MSIX" e "Gerar MSIX (MakeAppx)" e inclua a linha `dist/*.msix` na lista `files` do passo de publicação. Depois configure as variáveis `MSIX_IDENTITY_NAME`, `MSIX_PUBLISHER` e `MSIX_PUBLISHER_DISPLAY` (seção 4).
 

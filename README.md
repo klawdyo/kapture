@@ -21,17 +21,15 @@ Site: https://klawdyo.github.io/kapture/ | Download: [última versão](https://g
 
 ## Como baixar
 
-Baixe o `kapture-win-Setup.exe` na aba **Releases** do repositório e execute-o. A instalação é de um clique e **por usuário**: o kapture vai para `%LOCALAPPDATA%\kapture`, sem pedir administrador, e cria atalhos na área de trabalho e no menu iniciar. Para desinstalar, use **Configurações > Aplicativos > Aplicativos instalados** (Apps e recursos).
+Baixe o `kapture.exe` na aba **Releases** do repositório e execute-o. Não há instalação: é um único arquivo, que você pode guardar onde quiser (por exemplo, na área de trabalho), sem pedir administrador. Para remover, apague o arquivo (e, se quiser, a pasta de logs, veja abaixo).
 
-> **Aviso:** o instalador não é assinado digitalmente. O Windows SmartScreen pode exibir um alerta; clique em "Mais informações" e depois em "Executar assim mesmo". Confira o `SHA256SUMS` publicado junto, se quiser verificar a integridade.
-
-O `.msi` continua nos Releases como alternativa temporária, até o novo instalador ser aprovado.
+> **Aviso:** o `kapture.exe` não é assinado digitalmente. O Windows SmartScreen pode exibir um alerta; clique em "Mais informações" e depois em "Executar assim mesmo". Confira o `SHA256SUMS` publicado junto, se quiser verificar a integridade.
 
 O `.msix` para a Microsoft Store está desligado por enquanto (veja [docs/msix-store.md](docs/msix-store.md)).
 
 ## Decisão técnica: sem FFmpeg
 
-O kapture usa o encoder nativo do Windows, o **Media Foundation** (H.264 + AAC em MP4), em vez de embutir o FFmpeg. Isso reduz o instalador em dezenas de megabytes. A webcam entra no vídeo por captura direta da janela dela, sem filtros de overlay.
+O kapture usa o encoder nativo do Windows, o **Media Foundation** (H.264 + AAC em MP4), em vez de embutir o FFmpeg. Isso reduz o executável em dezenas de megabytes. A webcam entra no vídeo por captura direta da janela dela, sem filtros de overlay.
 
 ## Onde ficam os logs
 
@@ -43,7 +41,11 @@ Para abrir a pasta, clique na engrenagem da barra e depois em **Abrir logs**. Se
 
 ## Atualizações
 
-Ao abrir, o kapture consulta uma única vez a página de Releases do GitHub (`api.github.com/repos/klawdyo/kapture/releases/latest`) para saber se existe versão mais nova. A consulta é um GET simples, sem enviar nenhum dado seu, com limite de 5 segundos. Se houver atualização, uma bolinha vermelha piscando aparece na barra de título; ao clicar, o app mostra as versões instalada e nova, com os botões **Baixar** (abre a página do release no navegador) e **Depois**. Sem atualização ou sem internet, nada aparece (o resultado só vai para o log). Com a opção de movimento reduzido do Windows ligada, a bolinha fica parada. O app não baixa nem instala nada sozinho. Não há opção para desativar a consulta; para bloquear, negue a conexão do app a `api.github.com` no firewall.
+Ao abrir, o kapture consulta o GitHub uma vez para saber se há versão nova. Se houver, aparece **Atualização disponível** com a bolinha, e o clique mostra as versões instalada e nova com os botões **Baixar** (abre a página do release no navegador, onde está o `kapture.exe` novo) e **Depois**. A troca é manual: baixe o novo `kapture.exe` e use-o no lugar do antigo. Se não houver atualização ou faltar internet, nada aparece (o motivo só vai para o log). Nada disso aparece durante a gravação.
+
+O que é enviado: apenas a requisição comum a `api.github.com/repos/klawdyo/kapture/releases/latest`, sem nenhum dado seu além do que toda requisição HTTPS carrega. Não há opção para desativar; para bloquear, negue a conexão do app a `api.github.com` no firewall.
+
+A atualização fica atrás da porta `Updater` do núcleo, então um futuro atualizador automático pode entrar sem mexer na interface.
 
 ## Desenvolvimento
 
@@ -59,6 +61,10 @@ npx vitest run         # testes do front-end
 Fluxo: o desenvolvimento acontece na `dev`; a `main` só recebe releases (merge da `dev`), que criam a tag e o GitHub Release automaticamente. Os commits seguem Conventional Commits e a versão é calculada a partir deles. Veja [CONTRIBUTING.md](CONTRIBUTING.md) e [docs/versioning.md](docs/versioning.md).
 
 A arquitetura está em [docs/CONTRACT.md](docs/CONTRACT.md) e o empacotamento em [docs/BUILD.md](docs/BUILD.md).
+
+## Privacidade
+
+O kapture não coleta telemetria nem envia dados do usuário. Leia a política completa em [PRIVACY.md](PRIVACY.md).
 
 ## Licença
 

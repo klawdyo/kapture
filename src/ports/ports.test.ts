@@ -44,6 +44,8 @@ describe('FakeBackend', () => {
     await f.openLogs()
     expect(await f.version()).toBe('0.1.0')
     await f.openUrl('u')
+    await f.updateStart()
+    await f.updateApply()
     await f.start({ mode: 'screen', sys: true, fps: 30 })
     expect((await f.state()).state).toBe('rec')
     await f.pause()
@@ -56,6 +58,7 @@ describe('FakeBackend', () => {
     expect(f.calls).toContainEqual(['logUi', { lvl: 'warn', msg: 'm' }])
     expect(f.calls.map((c) => c[0])).toContain('openLogs')
     expect(f.calls).toContainEqual(['openUrl', 'u'])
+    expect(f.calls.map((c) => c[0])).toEqual(expect.arrayContaining(['updateStart', 'updateApply']))
   })
   it('falha quando pedido', async () => {
     const f = new FakeBackend()
@@ -70,12 +73,14 @@ describe('FakeBackend', () => {
       f.onState((s) => got.push(s.state)),
       f.onHotkey(() => got.push('hk')),
       f.onResize((w, h) => got.push([w, h])),
+      f.onUpdate((s) => got.push(s.kind)),
     ])
     f.emit('mic', 0.5)
     f.emit('state', { state: 'rec', secs: 1 })
     f.emit('hotkey')
     f.emit('resize', 1, 2)
-    expect(got).toEqual([0.5, 'rec', 'hk', [1, 2]])
+    f.emit('upd', { kind: 'checking' })
+    expect(got).toEqual([0.5, 'rec', 'hk', [1, 2], 'checking'])
     expect(f.subs('mic')).toBe(1)
     offs.forEach((o) => o())
     expect(f.subs('mic')).toBe(0)
@@ -149,6 +154,11 @@ describe('realBackend', () => {
     await realBackend.openLogs()
     expect(invoke.mock.calls).toEqual([['log_ui', { lvl: 'error', msg: 'ruim' }], ['open_logs']])
   })
+  it('atualização: inicia o ciclo e reinicia pelos comandos', async () => {
+    await realBackend.updateStart()
+    await realBackend.updateApply()
+    expect(invoke.mock.calls).toEqual([['update_start'], ['update_apply']])
+  })
   it('falha de comando vai para o log e o erro é repassado', async () => {
     invoke.mockImplementation(async (cmd: string) => {
       if (cmd === 'start_rec') throw 'Sem permissão'
@@ -169,10 +179,12 @@ describe('realBackend', () => {
     await realBackend.onMic((l) => got.push(l))
     await realBackend.onState((s) => got.push(s))
     await realBackend.onHotkey(() => got.push('hk'))
+    await realBackend.onUpdate((s) => got.push(s))
+    handlers['update-state']({ payload: { kind: 'downloading', pct: 7 } })
     handlers['mic-level']({ payload: { level: 0.3 } })
     handlers['rec-state']({ payload: { state: 'rec', secs: 2 } })
     handlers['hotkey']({ payload: null })
-    expect(got).toEqual([0.3, { state: 'rec', secs: 2 }, 'hk'])
+    expect(got).toEqual([{ kind: 'downloading', pct: 7 }, 0.3, { state: 'rec', secs: 2 }, 'hk'])
   })
   it('barra: minimiza, fecha e redimensiona', async () => {
     await realBackend.minimize()

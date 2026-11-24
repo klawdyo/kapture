@@ -1,106 +1,178 @@
 <script setup lang="ts">
+// Página inicial do kapture: hero integrado com a demonstração viva do app, recursos e instalação.
 const config = useRuntimeConfig()
 const downloadUrl = config.public.downloadUrl
 
-const LEFT = { title: 'text-start', description: 'text-start max-w-2xl', header: 'max-w-3xl' }
-
-const heroLinks = [
-  { label: 'Baixar instalador', to: downloadUrl, external: true, size: 'xl' as const, icon: 'i-lucide-download' },
-  { label: 'Ver recursos', to: '#recursos', color: 'neutral' as const, variant: 'outline' as const, size: 'xl' as const }
-]
-
+// Recursos em linguagem direta, sem jargão técnico.
 const features = [
-  { icon: 'i-lucide-monitor', title: 'Tela, janela ou área', description: 'Grave o monitor inteiro, uma janela específica ou um retângulo desenhado por você.', modes: ['Tela', 'Janela', 'Área'] },
-  { icon: 'i-lucide-camera', title: 'Webcam arrastável 1:1', description: 'Uma bolha quadrada com sua câmera, que você posiciona onde quiser sobre a gravação.' },
-  { icon: 'i-lucide-mic', title: 'Microfone com medidor', description: 'Veja o nível do áudio em tempo real, antes e durante a gravação.' },
-  { icon: 'i-lucide-keyboard', title: 'Atalho global', description: 'Inicie e pare a gravação de qualquer lugar, sem tirar as mãos do teclado.', kbd: true },
-  { icon: 'i-lucide-file-text', title: 'Logs em disco', description: 'Cada sessão registra o que aconteceu em arquivo, para você diagnosticar qualquer problema.' }
+  {
+    title: 'Tela, janela ou área',
+    detail: 'Grave o monitor inteiro, uma janela específica ou apenas um retângulo escolhido por você.'
+  },
+  {
+    title: 'Webcam arrastável',
+    detail: 'Mostre sua câmera em um quadrado limpo e arraste para o canto que preferir.'
+  },
+  {
+    title: 'Microfone com medidor',
+    detail: 'Confira se o som está chegando antes de começar e enquanto grava.'
+  },
+  {
+    title: 'Atalho Ctrl+Shift+R',
+    detail: 'Comece e termine a gravação de qualquer janela, sem tirar as mãos do teclado.'
+  },
+  {
+    title: 'Leve de verdade',
+    detail: 'Executável com menos de 2 MB, abre rápido e não pesa enquanto você grava.'
+  }
 ]
 
-const spec = [
-  { k: 'Instalação', v: 'por usuário, sem admin' },
-  { k: 'Encoder', v: 'nativo do Windows' },
-  { k: 'FFmpeg', v: 'não usa' }
-]
-
-const steps = [
-  'Baixe o kapture-win-Setup.exe.',
-  'Abra o instalador: ele instala em um clique, só para o seu usuário, sem pedir administrador.',
-  'Pressione Ctrl+Shift+R para começar a gravar.'
+// Passos objetivos para baixar e usar.
+const installSteps = [
+  {
+    title: 'Baixe o kapture.exe',
+    body: 'Faça o download do arquivo único, sem instalação.'
+  },
+  {
+    title: 'Execute o arquivo',
+    body: 'Sem instalação, é só baixar e executar. Não pede administrador.'
+  },
+  {
+    title: 'Comece a gravar',
+    body: 'Clique em Gravar ou pressione Ctrl+Shift+R.'
+  }
 ]
 </script>
 
 <template>
   <div>
-    <UPageHero
-      title="Grave a tela. Só isso."
-      description="kapture é um gravador de tela leve para Windows: um instalador minúsculo e uma pílula discreta no canto da tela."
-      orientation="horizontal"
-      :ui="{ title: 'text-balance', description: 'text-pretty' }"
-    >
-      <template #links>
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-wrap gap-3">
-            <UButton v-for="l in heroLinks" :key="l.label" v-bind="l" />
-          </div>
-          <p class="text-sm text-muted">Windows 10 e 11 · gratuito · licença MIT</p>
-        </div>
-      </template>
-      <div class="relative mx-auto grid aspect-square w-full max-w-sm place-items-center sm:max-w-md">
-        <div aria-hidden="true" class="absolute inset-[6%] rounded-full border border-default" />
-        <BrandLogo :size="320" priority alt="Logo do kapture: obturador de câmera com ponto vermelho de gravação" class="w-[72%] [&_img]:size-full [&_img]:drop-shadow-2xl" />
-        <RecPill class="absolute bottom-[3%] left-1/2 -translate-x-1/2" />
-      </div>
-    </UPageHero>
+    <!-- Hero com grade sutil da marca, pôster em telas grandes e a barra interativa integrada logo abaixo. -->
+    <section class="brand-grid border-b border-[var(--line-hairline)]">
+      <div class="mx-auto max-w-6xl px-5 pb-14 pt-12 sm:px-8 md:pb-20 md:pt-16 lg:pb-24 lg:pt-20">
+        <div class="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
+          <div class="max-w-xl">
+            <h1 class="font-display text-4xl font-bold leading-[1.06] tracking-[-0.03em] text-balance text-[var(--ink-primary)] sm:text-5xl lg:text-[3.5rem]">
+              Grave a tela.<br>Só isso.
+            </h1>
 
-    <UPageSection id="recursos" title="Tudo o que você precisa, nada além" description="Cinco recursos pensados para gravar e mostrar o que importa." :ui="LEFT">
-      <ul class="w-full divide-y divide-default border-y border-default">
-        <li v-for="f in features" :key="f.title" class="grid gap-2 py-6 md:grid-cols-[minmax(0,18rem)_1fr] md:gap-10">
-          <h3 class="flex items-center gap-3 font-semibold text-highlighted">
-            <UIcon :name="f.icon" class="size-5 shrink-0 text-muted" aria-hidden="true" />
-            {{ f.title }}
-          </h3>
-          <div class="text-muted">
-            <p class="text-pretty">{{ f.description }}</p>
-            <p v-if="f.kbd" class="mt-3 flex flex-wrap items-center gap-1.5" aria-label="Atalho: Ctrl, Shift e R">
-              <UKbd value="Ctrl" size="lg" /><span aria-hidden="true" class="text-sm">+</span><UKbd value="Shift" size="lg" /><span aria-hidden="true" class="text-sm">+</span><UKbd value="R" size="lg" />
+            <p class="mt-5 max-w-[44ch] text-lg leading-relaxed text-pretty text-[var(--ink-secondary)]">
+              Gravador de tela para Windows com menos de 2 MB.
             </p>
-            <p v-if="f.modes" class="mt-3 flex flex-wrap gap-2">
-              <UBadge v-for="m in f.modes" :key="m" :label="m" color="neutral" variant="outline" size="lg" />
-            </p>
+
+            <div class="mt-8 flex flex-wrap items-center gap-3.5">
+              <a
+                :href="downloadUrl"
+                rel="noopener"
+                class="focus-ring inline-flex items-center gap-2.5 rounded-xl bg-[#14181f] px-6 py-3.5 text-base font-semibold text-[#f6f7f9] shadow-md shadow-black/15 transition-colors hover:bg-[#232a35] dark:bg-[#f2f4f8] dark:text-[#15181e] dark:hover:bg-[#dde2eb]"
+              >
+                <UIcon name="i-lucide-download" class="size-5" aria-hidden="true" />
+                <span>Baixar o kapture.exe</span>
+              </a>
+
+              <a
+                href="#recursos"
+                class="focus-ring inline-flex items-center gap-2 rounded-xl border border-[var(--line-hairline)] bg-[var(--surface-elevated)] px-5 py-3.5 text-base font-medium text-[var(--ink-primary)] transition-colors hover:border-[var(--ink-muted)]"
+              >
+                <span>Ver recursos</span>
+              </a>
+            </div>
+
+            <div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-[var(--line-hairline)] pt-5 text-sm text-[var(--ink-muted)]">
+              <span>Windows 10 e 11 · gratuito · licença MIT</span>
+              <span class="inline-flex items-center gap-1.5" aria-label="Atalho: Ctrl, Shift e R">
+                <kbd class="keycap">Ctrl</kbd>
+                <span aria-hidden="true">+</span>
+                <kbd class="keycap">Shift</kbd>
+                <span aria-hidden="true">+</span>
+                <kbd class="keycap">R</kbd>
+              </span>
+            </div>
           </div>
+
+          <!-- Pôster oficial apenas em telas grandes, evitando espaço vertical desperdiçado no celular. -->
+          <div class="ml-auto hidden w-full max-w-[340px] lg:block">
+            <div class="poster-elevation overflow-hidden rounded-2xl">
+              <ThemeArt
+                light="media/poster-light.png"
+                dark="media/poster-dark.png"
+                :width="720"
+                :height="1080"
+                priority
+                alt="Pôster do kapture com obturador de câmera e ponto vermelho de gravação"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Continuação natural do hero: a própria barra real do app, mudando junto com o tema do site. -->
+        <div class="mt-12 border-t border-[var(--line-hairline)] pt-10 lg:mt-16 lg:pt-12">
+          <AppPreview />
+        </div>
+      </div>
+    </section>
+
+    <!-- Lista enxuta de recursos em linguagem simples. -->
+    <section id="recursos" class="mx-auto max-w-5xl px-5 py-16 sm:px-8 lg:py-24">
+      <h2 class="font-display text-2xl font-bold tracking-[-0.02em] text-[var(--ink-primary)] sm:text-3xl">
+        Recursos
+      </h2>
+
+      <ul class="mt-8 divide-y divide-[var(--line-hairline)] border-y border-[var(--line-hairline)]">
+        <li
+          v-for="item in features"
+          :key="item.title"
+          class="grid gap-1.5 py-5 sm:grid-cols-[minmax(0,15rem)_1fr] sm:gap-10"
+        >
+          <h3 class="font-display text-base font-bold text-[var(--ink-primary)]">
+            {{ item.title }}
+          </h3>
+          <p class="text-sm leading-relaxed text-[var(--ink-secondary)] sm:text-base">
+            {{ item.detail }}
+          </p>
         </li>
       </ul>
-    </UPageSection>
+    </section>
 
-    <UPageSection id="leve" title="Por que é leve" description="kapture usa o encoder nativo do Windows (Media Foundation) para gerar o vídeo. Não embute FFmpeg nem outros binários pesados, e a interface reaproveita o WebView do sistema. O resultado é um instalador pequeno, abertura rápida e gravações que não disputam recursos com o que você está mostrando." orientation="horizontal" :ui="{ description: 'text-pretty' }">
-      <dl class="rounded-2xl bg-zinc-900 p-2 text-zinc-50 shadow-xl shadow-zinc-950/15 ring-1 ring-white/10 dark:bg-black dark:ring-white/20">
-        <div v-for="r in spec" :key="r.k" class="flex items-baseline justify-between gap-6 px-5 py-4 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-white/10">
-          <dt class="text-zinc-300">{{ r.k }}</dt>
-          <dd class="font-mono font-semibold tabular-nums">{{ r.v }}</dd>
-        </div>
-      </dl>
-    </UPageSection>
+    <!-- Instalação direta sobre a mesma grade sutil da marca. -->
+    <section id="instalar" class="brand-grid border-t border-[var(--line-hairline)]">
+      <div class="mx-auto max-w-5xl px-5 py-16 sm:px-8 lg:py-24">
+        <h2 class="font-display text-2xl font-bold tracking-[-0.02em] text-[var(--ink-primary)] sm:text-3xl">
+          Download
+        </h2>
+        <p class="mt-2 text-base text-[var(--ink-secondary)]">
+          Windows 10 ou 11, 64 bits.
+        </p>
 
-    <UPageSection id="instalacao" title="Instalação" description="Windows 10 ou 11, 64 bits." :ui="LEFT">
-      <div class="grid w-full max-w-3xl gap-8">
-        <ol class="grid gap-3">
-          <li v-for="(text, i) in steps" :key="text" class="flex items-center gap-4 rounded-xl border border-default px-5 py-4">
-            <span class="grid size-8 shrink-0 place-items-center rounded-full bg-zinc-900 font-mono text-sm font-semibold text-zinc-50 dark:bg-black dark:ring-1 dark:ring-white/20" aria-hidden="true">{{ i + 1 }}</span>
-            <span><span class="sr-only">Passo {{ i + 1 }}: </span>{{ text }}</span>
+        <ol class="mt-8 grid gap-6 border-y border-[var(--line-hairline)] py-7 sm:grid-cols-3 sm:gap-8">
+          <li v-for="(step, idx) in installSteps" :key="step.title">
+            <p class="font-mono text-xs font-semibold tabular-nums text-[var(--ink-muted)]">
+              Passo {{ idx + 1 }}
+            </p>
+            <h3 class="font-display mt-1.5 text-base font-bold text-[var(--ink-primary)]">
+              {{ step.title }}
+            </h3>
+            <p class="mt-1.5 text-sm leading-relaxed text-[var(--ink-secondary)]">
+              {{ step.body }}
+            </p>
           </li>
         </ol>
-        <UAlert
-          color="neutral"
-          variant="outline"
-          icon="i-lucide-shield-alert"
-          title="Aviso do SmartScreen"
-          description="O instalador ainda não é assinado digitalmente, então o Windows pode exibir “O Windows protegeu o seu computador”. Clique em Mais informações e depois em Executar assim mesmo."
-        />
-        <div>
-          <UButton size="xl" label="Baixar instalador" :to="downloadUrl" external icon="i-lucide-download" />
+
+        <div class="mt-8">
+          <a
+            :href="downloadUrl"
+            rel="noopener"
+            class="focus-ring inline-flex items-center gap-2.5 rounded-xl bg-[#14181f] px-6 py-3.5 text-base font-semibold text-[#f6f7f9] shadow-md shadow-black/15 transition-colors hover:bg-[#232a35] dark:bg-[#f2f4f8] dark:text-[#15181e] dark:hover:bg-[#dde2eb]"
+          >
+            <UIcon name="i-lucide-download" class="size-5" aria-hidden="true" />
+            <span>Baixar o kapture.exe</span>
+          </a>
         </div>
+
+        <p class="mt-6 max-w-[62ch] text-xs leading-relaxed text-[var(--ink-muted)]">
+          <strong class="font-semibold text-[var(--ink-secondary)]">Aviso do SmartScreen:</strong>
+          como o kapture.exe ainda não é assinado digitalmente, o Windows pode mostrar “O Windows protegeu o seu computador”. Clique em <em>Mais informações</em> e depois em <em>Executar assim mesmo</em>.
+        </p>
       </div>
-    </UPageSection>
+    </section>
   </div>
 </template>

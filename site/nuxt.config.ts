@@ -1,5 +1,9 @@
 // Site estático do kapture. `npm run generate` gera .output/public.
 // Variáveis NUXT_PUBLIC_* são lidas em tempo de build (o site é estático).
+import { fileURLToPath } from 'node:url'
+
+const appSrc = fileURLToPath(new URL('../src', import.meta.url))
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
@@ -8,9 +12,22 @@ export default defineNuxtConfig({
   ssr: true,
   telemetry: false,
 
-  // Fontes de sistema apenas: nada é baixado em build nem em runtime.
+  // Compartilha os componentes Vue puros do app (src/ui e src/components) com o site.
+  alias: {
+    '@app': appSrc
+  },
+  vite: {
+    server: {
+      fs: {
+        allow: [appSrc]
+      }
+    }
+  },
+
+  // Fontes locais e de sistema: nada é baixado em build nem em runtime.
   fonts: {
     families: [
+      { name: 'Rubik', provider: 'none' },
       { name: 'Segoe UI', provider: 'none' },
       { name: 'Roboto', provider: 'none' },
       { name: 'Helvetica Neue', provider: 'none' },
@@ -29,7 +46,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       // NUXT_PUBLIC_DOWNLOAD_URL: o repositório é público, então o padrão abaixo
-      // leva ao último release. Pode apontar para outra URL do .msi se quiser.
+      // baixa direto o kapture.exe do último release. Pode apontar para outra URL se quiser.
       downloadUrl: 'https://github.com/klawdyo/kapture/releases/latest',
       // NUXT_PUBLIC_SITE_URL (opcional): URL pública do site, usada nas tags og:*.
       siteUrl: '',
@@ -44,6 +61,6 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    prerender: { crawlLinks: true, routes: ['/', '/404.html'] }
+    prerender: { crawlLinks: true, routes: ['/', '/privacidade', '/404.html'] }
   }
 })

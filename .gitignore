@@ -26,6 +26,3 @@ rustc-ice-*.txt
 node_modules/
 dist/
 coverage/
-
-# Saída do vpk (scripts/pack-velopack.ps1)
-Releases/

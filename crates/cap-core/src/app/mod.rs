@@ -3,7 +3,9 @@
 mod logged;
 mod misc;
 mod recorder;
+mod upd;
 
 pub use logged::*;
 pub use misc::*;
 pub use recorder::*;
+pub use upd::*;

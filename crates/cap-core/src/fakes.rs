@@ -1,11 +1,13 @@
 //! Implementações FAKE das portas: gravam as chamadas e permitem injetar
 //! falhas (`fail.set("op", "mensagem")`). Reutilizáveis em outros crates.
 
-use crate::domain::{Devices, Frame, RecCfg, RecState, Region, Stamp, Targets as TargetsData};
+use crate::domain::{
+    Devices, Frame, RecCfg, RecState, Region, Stamp, Targets as TargetsData, UpdInfo, UpdState,
+};
 use crate::lk;
 use crate::log::Lvl;
 use crate::ports::{
-    Cam, Capture, Clock, Devs, Encoder, Events, Fs, Log, MicSink, Opener, Picker, Targets,
+    Cam, Capture, Clock, Devs, Encoder, Events, Fs, Log, MicSink, Opener, Picker, Targets, Updater,
 };
 use crate::{CapErr, Res};
 use std::collections::HashMap;
@@ -291,6 +293,7 @@ impl Picker for FakePicker {
 pub struct FakeEvents {
     pub levels: Mutex<Vec<f32>>,
     pub states: Mutex<Vec<RecState>>,
+    pub updates: Mutex<Vec<UpdState>>,
 }
 
 impl Events for FakeEvents {
@@ -299,6 +302,54 @@ impl Events for FakeEvents {
     }
     fn rec_state(&self, st: &RecState) {
         lk(&self.states).push(*st);
+    }
+    fn update_state(&self, st: &UpdState) {
+        lk(&self.updates).push(st.clone());
+    }
+}
+
+/// Fake de `ports::Updater`. Operações: `check`, `download` e `apply`
+/// (falham com `fail.set`). `supported` e `found` são ajustáveis; o
+/// `download` reporta os percentuais de `steps`.
+pub struct FakeUpdater {
+    pub supported: Mutex<bool>,
+    pub found: Mutex<Option<UpdInfo>>,
+    pub steps: Mutex<Vec<u8>>,
+    pub calls: Calls,
+    pub fail: Inject,
+}
+
+impl Default for FakeUpdater {
+    fn default() -> Self {
+        FakeUpdater {
+            supported: Mutex::new(true),
+            found: Mutex::new(None),
+            steps: Mutex::new(vec![]),
+            calls: Calls::default(),
+            fail: Inject::default(),
+        }
+    }
+}
+
+impl Updater for FakeUpdater {
+    fn supported(&self) -> bool {
+        *lk(&self.supported)
+    }
+    fn check(&self) -> Res<Option<UpdInfo>> {
+        self.calls.log("check");
+        self.fail.check("check")?;
+        Ok(lk(&self.found).clone())
+    }
+    fn download(&self, progress: &dyn Fn(u8)) -> Res<()> {
+        self.calls.log("download");
+        for p in lk(&self.steps).iter() {
+            progress(*p);
+        }
+        self.fail.check("download")
+    }
+    fn apply_and_restart(&self) -> Res<()> {
+        self.calls.log("apply");
+        self.fail.check("apply")
     }
 }
 
@@ -528,6 +579,30 @@ mod tests {
         });
         assert_eq!(*lk(&e.levels), vec![0.5]);
         assert_eq!(lk(&e.states)[0].state, St::Rec);
+        e.update_state(&UpdState::Checking);
+        assert_eq!(*lk(&e.updates), vec![UpdState::Checking]);
+
+        let u = FakeUpdater::default();
+        assert!(u.supported());
+        assert_eq!(u.check().unwrap(), None);
+        *lk(&u.found) = Some(UpdInfo {
+            version: "2.0.0".into(),
+        });
+        assert_eq!(u.check().unwrap().unwrap().version, "2.0.0");
+        *lk(&u.steps) = vec![10, 90];
+        let seen = Mutex::new(vec![]);
+        u.download(&|p| lk(&seen).push(p)).unwrap();
+        assert_eq!(*lk(&seen), vec![10, 90]);
+        u.apply_and_restart().unwrap();
+        u.fail.set("check", "c");
+        u.fail.set("download", "d");
+        u.fail.set("apply", "a");
+        assert!(
+            u.check().is_err() && u.download(&|_| {}).is_err() && u.apply_and_restart().is_err()
+        );
+        *lk(&u.supported) = false;
+        assert!(!u.supported());
+        assert_eq!(u.calls.all().len(), 7);
 
         let l = FakeLog::default();
         l.debug("d");

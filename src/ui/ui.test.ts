@@ -7,6 +7,7 @@ import RecBtn from '../components/RecBtn.vue'
 import TitleBar from '../components/TitleBar.vue'
 import VuMeter from '../components/VuMeter.vue'
 import UpdateDot from '../components/UpdateDot.vue'
+import UpdateStatus from '../components/UpdateStatus.vue'
 import Box from './Box.vue'
 import Btn from './Btn.vue'
 import Dot from './Dot.vue'
@@ -15,6 +16,8 @@ import Meter from './Meter.vue'
 import Pop from './Pop.vue'
 import Segmented from './Segmented.vue'
 import Select from './Select.vue'
+import Txt from './Txt.vue'
+import TxtBtn from './TxtBtn.vue'
 import Video from './Video.vue'
 
 describe('ui genérico', () => {
@@ -146,3 +149,56 @@ describe('ui: Dot e Pop', () => {
     expect(p.emitted('close')).toHaveLength(1)
   })
 })
+
+describe('status de atualização', () => {
+  it('Txt: texto discreto; só vira região anunciada com live', () => {
+    const a = mount(Txt, { slots: { default: 'x' } })
+    expect(a.attributes('aria-live')).toBeUndefined()
+    const b = mount(Txt, { props: { live: true }, slots: { default: 'y' } })
+    expect(b.attributes('role')).toBe('status')
+    expect(b.attributes('aria-live')).toBe('polite')
+  })
+  it('TxtBtn: botão que emite click', async () => {
+    const c = mount(TxtBtn, { slots: { default: 'Reinicie' } })
+    await c.trigger('click')
+    expect(c.emitted('click')).toHaveLength(1)
+    expect(c.element.tagName).toBe('BUTTON')
+  })
+  it('Dot inerte: decorativo, sem botão', () => {
+    const d = mount(Dot, { props: { inert: true, blink: true } })
+    expect(d.element.tagName).toBe('SPAN')
+    expect(d.attributes('aria-hidden')).toBe('true')
+    expect(d.classes()).toContain('blink')
+  })
+  const base = { text: '', upd: null, cur: '0.1.0', open: false }
+  it('UpdateStatus: só texto em verificando e atualizando', () => {
+    const c = mount(UpdateStatus, { props: { ...base, phase: 'downloading', text: 'Atualizando… 42%' } })
+    expect(c.find('[role="status"]').text()).toBe('Atualizando… 42%')
+    expect(c.find('button').exists()).toBe(false)
+  })
+  it('UpdateStatus: pronto vira botão com bolinha e emite apply', async () => {
+    const c = mount(UpdateStatus, { props: { ...base, phase: 'ready', text: 'Reinicie para atualizar' } })
+    const b = c.find('[role="status"] button')
+    expect(b.text()).toBe('Reinicie para atualizar')
+    expect(b.find('.dot.inert.blink').exists()).toBe(true)
+    await b.trigger('click')
+    expect(c.emitted('apply')).toHaveLength(1)
+  })
+  it('UpdateStatus: fallback mostra texto e a bolinha com eventos', async () => {
+    const props = { ...base, phase: 'available' as const, text: 'Atualização disponível', upd: { version: '0.2.0', url: 'u' } }
+    const c = mount(UpdateStatus, { props })
+    expect(c.find('[role="status"]').text()).toBe('Atualização disponível')
+    await c.find('button[aria-label="Atualização disponível"]').trigger('click')
+    expect(c.emitted('toggle')).toHaveLength(1)
+    const o = mount(UpdateStatus, { props: { ...props, open: true } })
+    await o.findAll('.act button')[0].trigger('click')
+    await o.findAll('.act button')[1].trigger('click')
+    expect(o.emitted('download')).toHaveLength(1)
+    expect(o.emitted('later')).toHaveLength(1)
+  })
+  it('UpdateStatus: ocioso fica vazio', () => {
+    const c = mount(UpdateStatus, { props: { ...base, phase: 'idle' } })
+    expect(c.find('[role="status"]').text()).toBe('')
+  })
+})
+

@@ -2,7 +2,7 @@
 //! aos casos de uso do `cap-core`. Erros chegam à interface como texto
 //! em português (contrato).
 
-use cap_core::app::{CamCtl, Lister, MicMeter, Recorder, RegionPick, UrlOpen};
+use cap_core::app::{CamCtl, Lister, MicMeter, Recorder, RegionPick, Update, UrlOpen};
 use cap_core::domain::{Devices, RecCfg, RecState, Region, Targets};
 use cap_core::log::{log_ipc, log_ui as ui_line};
 use cap_core::media::PickChan;
@@ -20,6 +20,7 @@ pub struct Core {
     pub pick: RegionPick,
     pub meter: MicMeter,
     pub url: UrlOpen,
+    pub upd: Update,
     pub chan: Arc<PickChan>,
     pub log: Arc<dyn Log>,
 }
@@ -153,6 +154,21 @@ pub fn open_logs(st: St<'_>) -> Result<(), String> {
 #[tauri::command]
 pub fn open_url(st: St<'_>, url: String) -> Result<(), String> {
     st.url.open(&url).map_err(|e| e.0)
+}
+
+/// Inicia o ciclo de atualização em segundo plano (uma vez por execução;
+/// chamadas seguintes só reemitem o estado). O resultado chega pelo evento
+/// `update-state`.
+#[tauri::command]
+pub fn update_start(st: St<'_>) {
+    let core = st.inner().clone();
+    std::thread::spawn(move || core.upd.run());
+}
+
+/// Reinicia o app aplicando a atualização já baixada (estado `ready`).
+#[tauri::command]
+pub async fn update_apply(st: St<'_>) -> Result<(), String> {
+    blk(st, "update_apply", |c| c.upd.apply()).await
 }
 
 /// Redimensiona a janela da barra (px lógicos), mantendo centro e base.

@@ -13,7 +13,7 @@ export const BAR: Dim = { w: 720, h: 136 }
 /** Altura da linha extra (alvo e configurações). */
 export const EXTRA_H = 48
 /** Pílula do modo gravando. */
-export const PILL: Dim = { w: 260, h: 56 }
+export const PILL: Dim = { w: 150, h: 48 }
 
 /** Tamanho da janela da barra conforme o modo e a linha extra. */
 export function barSize(active: boolean, extra: boolean): Dim {
