@@ -1,10 +1,12 @@
-/* Estilos globais e tokens de design (grafite + vermelho só para gravar). */
+/* Estilos globais e tokens de design (grafite azulado + vermelho só para gravar). */
 :root {
-  --bg: rgba(24, 24, 27, 0.86);
-  --bd: rgba(255, 255, 255, 0.09);
-  --fg: #f4f4f5;
-  --mut: #a1a1aa;
-  --hov: rgba(255, 255, 255, 0.1);
+  --bg: rgba(26, 33, 48, 0.9); /* fallback do mica: painel semi-opaco */
+  --bd: rgba(255, 255, 255, 0.16);
+  --fg: #f1f5f9;
+  --mut: #b4bfd0; /* contraste AA sobre o painel */
+  --hov: rgba(255, 255, 255, 0.12);
+  --fld: rgba(255, 255, 255, 0.09);
+  --ok: #22c55e;
   --red: #ef4444;
   --red2: #dc2626;
   font-family: 'Segoe UI', system-ui, sans-serif;

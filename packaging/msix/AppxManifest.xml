@@ -1,14 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Manifesto do pacote MSIX do Cap.
+  Manifesto do pacote MSIX do Cap (modelo para a Microsoft Store).
 
-  PLACEHOLDERS que devem ser trocados pelos valores do Partner Center
-  (Microsoft Store > Gerenciamento de identidade do app):
-    - Identity/@Name       : "Package/Identity/Name"      (ex.: 12345Fulano.Cap)
-    - Identity/@Publisher  : "Package/Identity/Publisher" (ex.: CN=XXXXXXXX-XXXX-...)
-    - PublisherDisplayName : nome de exibição do publicador
-  Enquanto forem placeholders, o pacote serve apenas para testes locais.
-  @VERSION@ é substituído por build-msix.ps1 (formato A.B.C.D).
+  PLACEHOLDERS substituídos por build-msix.ps1 (parâmetros ou variáveis de ambiente):
+    @IDENTITY_NAME@         Package/Identity/Name       (ex.: 12345Fulano.Cap)
+    @PUBLISHER@             Package/Identity/Publisher  (ex.: CN=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX)
+    @PUBLISHER_DISPLAY@     Nome de exibição do publicador (Partner Center)
+    @VERSION@               Major.Minor.Build.0 (a Store reserva o último segmento e exige 0)
+  Os três primeiros vêm do Partner Center (Gerenciamento de identidade do app).
+  Sem eles, o script usa valores PLACEHOLDER e o pacote serve só para testes locais.
+  Detalhes em docs/msix-store.md.
+
+  Capabilities:
+    runFullTrust : obrigatório para app Win32/Tauri empacotado (rescap, exige justificativa na Store).
+    webcam       : Media Foundation (MFEnumDeviceSources) e getUserMedia na janela da webcam.
+    microphone   : captura WASAPI e getUserMedia.
+    Não declaradas de propósito: o loopback de áudio (WASAPI) e o Windows.Graphics.Capture
+    por HWND/HMONITOR em app de desktop não exigem capability. "graphicsCapture" (uap6) é
+    para apps UWP; "graphicsCaptureWithoutBorder" (uap11) só seria preciso se o app
+    desligasse a borda amarela (IsBorderRequired), o que ele não faz.
 -->
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
@@ -16,18 +26,20 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
 
-  <Identity Name="PLACEHOLDER.Cap"
-            Publisher="CN=PLACEHOLDER-PUBLISHER-ID"
+  <Identity Name="@IDENTITY_NAME@"
+            Publisher="@PUBLISHER@"
             Version="@VERSION@"
             ProcessorArchitecture="x64" />
 
   <Properties>
     <DisplayName>Cap</DisplayName>
-    <PublisherDisplayName>PLACEHOLDER Publisher</PublisherDisplayName>
+    <PublisherDisplayName>@PUBLISHER_DISPLAY@</PublisherDisplayName>
+    <Description>Gravador de tela leve com webcam e microfone</Description>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
   <Dependencies>
+    <!-- 17763 = Windows 10 1809; 22621 = Windows 11 22H2 (maior versão testada) -->
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
   </Dependencies>
 
@@ -41,9 +53,12 @@
         DisplayName="Cap"
         Description="Gravador de tela leve com webcam e microfone"
         BackgroundColor="transparent"
+        AppListEntry="default"
         Square150x150Logo="Assets\Square150x150.png"
         Square44x44Logo="Assets\Square44x44.png">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150.png" />
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150.png"
+                         Square71x71Logo="Assets\Square71x71.png"
+                         Square310x310Logo="Assets\Square310x310.png" />
       </uap:VisualElements>
     </Application>
   </Applications>

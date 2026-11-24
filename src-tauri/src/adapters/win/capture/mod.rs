@@ -8,6 +8,7 @@ mod video;
 use super::targets::monitors;
 use super::worker::Worker;
 use crate::lk;
+use crate::logging;
 use audio::Reader;
 use cap_core::domain::{Frame, RecCfg};
 use cap_core::media::{
@@ -77,7 +78,13 @@ impl WinCapture {
 /// Inicia a thread de vídeo: um quadro por período, repetindo o último
 /// quando a tela não muda (FPS constante).
 fn start_video(cfg: &RecCfg, clk: Clk, sink: Arc<dyn Encoder>) -> Res<Worker> {
-    let pl = plan(cfg, &monitors())?;
+    let mons = monitors();
+    let pl = plan(cfg, &mons).inspect_err(|e| {
+        logging::get().error(&format!(
+            "captura: plano inválido: {e} (monitores: {mons:?})"
+        ));
+    })?;
+    logging::get().info(&format!("captura: plano {pl:?}, {} fps", cfg.fps));
     let period = Duration::from_micros(1_000_000 / cfg.fps.max(1) as u64);
     Worker::start(
         period,

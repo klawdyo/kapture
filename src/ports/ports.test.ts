@@ -9,12 +9,16 @@ const listen = vi.fn(async (ev: string, cb: (e: { payload: unknown }) => void) =
 })
 let resized: (e: { payload: { width: number; height: number } }) => void = () => {}
 const setSize = vi.fn(async () => {})
+const minimize = vi.fn(async () => {})
+const close = vi.fn(async () => {})
 vi.mock('@tauri-apps/api/core', () => ({ invoke: (...a: unknown[]) => invoke(...a) }))
 vi.mock('@tauri-apps/api/event', () => ({ listen: (...a: [string, never]) => listen(...a) }))
 vi.mock('@tauri-apps/api/window', () => ({
   PhysicalSize: class { constructor(public width: number, public height: number) {} },
   getCurrentWindow: () => ({
     setSize,
+    minimize,
+    close,
     onResized: async (cb: typeof resized) => { resized = cb; return () => {} },
   }),
 }))
@@ -32,6 +36,11 @@ describe('FakeBackend', () => {
     expect(await f.pickRegion()).toBeNull()
     await f.submitRegion(null)
     await f.fitSquare(300)
+    await f.fitBar(720, 136)
+    await f.minimize()
+    await f.close()
+    await f.logUi('warn', 'm')
+    await f.openLogs()
     await f.start({ mode: 'screen', sys: true, fps: 30 })
     expect((await f.state()).state).toBe('rec')
     await f.pause()
@@ -39,7 +48,10 @@ describe('FakeBackend', () => {
     await f.resume()
     expect(f.st.state).toBe('rec')
     expect(await f.stop()).toBe(f.path)
-    expect(f.calls.map((c) => c[0])).toContain('fitSquare')
+    expect(f.calls.map((c) => c[0])).toEqual(expect.arrayContaining(['fitSquare', 'minimize', 'close']))
+    expect(f.calls).toContainEqual(['fitBar', { w: 720, h: 136 }])
+    expect(f.calls).toContainEqual(['logUi', { lvl: 'warn', msg: 'm' }])
+    expect(f.calls.map((c) => c[0])).toContain('openLogs')
   })
   it('falha quando pedido', async () => {
     const f = new FakeBackend()
@@ -116,6 +128,26 @@ describe('realBackend', () => {
       ['mic_start', { micId: 'm1' }], ['mic_stop'],
     ])
   })
+  it('envia mensagens ao log e abre a pasta de logs', async () => {
+    await realBackend.logUi('error', 'ruim')
+    await realBackend.openLogs()
+    expect(invoke.mock.calls).toEqual([['log_ui', { lvl: 'error', msg: 'ruim' }], ['open_logs']])
+  })
+  it('falha de comando vai para o log e o erro é repassado', async () => {
+    invoke.mockImplementation(async (cmd: string) => {
+      if (cmd === 'start_rec') throw 'Sem permissão'
+      return undefined
+    })
+    await expect(realBackend.start({ mode: 'screen', sys: true, fps: 30 })).rejects.toBe('Sem permissão')
+    await Promise.resolve()
+    expect(invoke).toHaveBeenLastCalledWith('log_ui', { lvl: 'error', msg: '[ipc] start_rec falhou: Sem permissão' })
+  })
+  it('falha ao gravar no log é descartada (sem laço)', async () => {
+    invoke.mockRejectedValue('tudo falha')
+    await expect(realBackend.stop()).rejects.toBe('tudo falha')
+    await expect(realBackend.logUi('info', 'x')).resolves.toBeUndefined()
+    expect(invoke.mock.calls.map((c) => c[0])).toEqual(['stop_rec', 'log_ui', 'log_ui'])
+  })
   it('assina eventos entregando o payload', async () => {
     const got: unknown[] = []
     await realBackend.onMic((l) => got.push(l))
@@ -125,6 +157,14 @@ describe('realBackend', () => {
     handlers['rec-state']({ payload: { state: 'rec', secs: 2 } })
     handlers['hotkey']({ payload: null })
     expect(got).toEqual([0.3, { state: 'rec', secs: 2 }, 'hk'])
+  })
+  it('barra: minimiza, fecha e redimensiona', async () => {
+    await realBackend.minimize()
+    await realBackend.close()
+    await realBackend.fitBar(720, 184)
+    expect(minimize).toHaveBeenCalledTimes(1)
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(invoke).toHaveBeenLastCalledWith('fit_toolbar', { w: 720, h: 184 })
   })
   it('redimensiona a janela', async () => {
     const got: number[][] = []

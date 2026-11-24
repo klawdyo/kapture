@@ -7,11 +7,14 @@
 //! (área) e guardado como o "último quadro"; a thread de captura o envia
 //! ao encoder no ritmo constante de FPS.
 
+use super::super::com::log_err;
 use crate::lk;
+use crate::logging;
 use cap_core::domain::Region;
 use cap_core::media::{crop_bgra, Source};
 use cap_core::{CapErr, Res};
 use std::ffi::c_void;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 use windows::core::{factory, Interface};
 use windows::Foundation::TypedEventHandler;
@@ -64,6 +67,7 @@ pub struct Grab {
 
 /// Converte erro do Windows numa mensagem em português.
 fn err(what: &str, e: windows::core::Error) -> CapErr {
+    log_err(what, &e);
     CapErr::from(format!("{what}: {}", e.message()))
 }
 
@@ -72,6 +76,7 @@ impl Grab {
     pub fn new(src: Source, crop: Option<Region>) -> Res<Grab> {
         let ok = GraphicsCaptureSession::IsSupported().unwrap_or(false);
         if !ok {
+            logging::get().error("captura de vídeo: Windows Graphics Capture não é suportado");
             return Err("A captura de tela exige o Windows 10 versão 1903 ou superior.".into());
         }
         let (dev, ctx) = d3d_device()?;
@@ -104,16 +109,27 @@ impl Grab {
         let token = pool
             .FrameArrived(&TypedEventHandler::new(
                 move |p: windows::core::Ref<Direct3D11CaptureFramePool>, _| {
-                    let p = p.ok()?;
-                    let frame = p.TryGetNextFrame()?;
-                    let sz = frame.ContentSize()?;
-                    let access: IDirect3DDxgiInterfaceAccess = frame.Surface()?.cast()?;
-                    // SAFETY: a superfície do WGC é uma ID3D11Texture2D.
-                    let tex: ID3D11Texture2D = unsafe { access.GetInterface()? };
-                    let img =
-                        read_frame(&mut lk(&gpu), &tex, sz.Width as u32, sz.Height as u32, crop)?;
-                    *lk(&sink) = img;
-                    Ok(())
+                    let r = (|| -> windows::core::Result<()> {
+                        let p = p.ok()?;
+                        let frame = p.TryGetNextFrame()?;
+                        let sz = frame.ContentSize()?;
+                        let access: IDirect3DDxgiInterfaceAccess = frame.Surface()?.cast()?;
+                        // SAFETY: a superfície do WGC é uma ID3D11Texture2D.
+                        let tex: ID3D11Texture2D = unsafe { access.GetInterface()? };
+                        let img = read_frame(
+                            &mut lk(&gpu),
+                            &tex,
+                            sz.Width as u32,
+                            sz.Height as u32,
+                            crop,
+                        )?;
+                        *lk(&sink) = img;
+                        Ok(())
+                    })();
+                    if let Err(e) = &r {
+                        frame_err(e);
+                    }
+                    r
                 },
             ))
             .map_err(|e| err("Falha ao iniciar a captura", e))?;
@@ -125,6 +141,10 @@ impl Grab {
         session
             .StartCapture()
             .map_err(|e| err("Falha ao iniciar a captura", e))?;
+        logging::get().info(&format!(
+            "captura de vídeo: iniciada (origem {src:?}, {}x{}, recorte {crop:?})",
+            size.Width, size.Height
+        ));
         Ok(Grab {
             latest,
             pool,
@@ -134,8 +154,19 @@ impl Grab {
     }
 }
 
+/// Registra falhas ao ler quadros (a 1ª e depois uma a cada 300, para
+/// não encher o arquivo a 30 quadros por segundo).
+fn frame_err(e: &windows::core::Error) {
+    static N: AtomicU32 = AtomicU32::new(0);
+    let n = N.fetch_add(1, Ordering::Relaxed) + 1;
+    if n == 1 || n.is_multiple_of(300) {
+        log_err(&format!("captura de vídeo: falha ao ler quadro (#{n})"), e);
+    }
+}
+
 impl Drop for Grab {
     fn drop(&mut self) {
+        logging::get().info("captura de vídeo: encerrada");
         // Ordem: para a sessão, desliga o callback e fecha o pool.
         let _ = self.session.Close();
         let _ = self.pool.RemoveFrameArrived(self.token);

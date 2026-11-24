@@ -4,6 +4,9 @@ import type { Devices, RecCfg, RecState, Region, Targets } from '../domain/types
 /** Função que cancela uma assinatura de evento. */
 export type Off = () => void
 
+/** Nível das mensagens enviadas ao log em disco. */
+export type LogLvl = 'debug' | 'info' | 'warn' | 'error'
+
 /** Porta do backend Tauri (comandos + eventos). */
 export interface Backend {
   targets(): Promise<Targets>
@@ -20,6 +23,16 @@ export interface Backend {
   micStart(micId: string): Promise<void>
   /** Desliga o VU meter. */
   micStop(): Promise<void>
+  /** Grava uma mensagem da interface no log em disco do backend. */
+  logUi(lvl: LogLvl, msg: string): Promise<void>
+  /** Abre a pasta de logs no Explorer. */
+  openLogs(): Promise<void>
+  /** Minimiza a janela atual. */
+  minimize(): Promise<void>
+  /** Fecha a janela atual (a da barra encerra o app). */
+  close(): Promise<void>
+  /** Redimensiona a barra (px lógicos), mantendo o centro da base. */
+  fitBar(w: number, h: number): Promise<void>
   /** Força a janela atual a ficar quadrada (px físicos). */
   fitSquare(size: number): Promise<void>
   onMic(cb: (level: number) => void): Promise<Off>

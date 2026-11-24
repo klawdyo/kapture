@@ -2,7 +2,8 @@
 
 use crate::domain::{file_name, validate, RecCfg, RecState, St};
 use crate::lk;
-use crate::ports::{Capture, Clock, Encoder, Events, Fs};
+use crate::log::cfg_line;
+use crate::ports::{Capture, Clock, Encoder, Events, Fs, Log};
 use crate::Res;
 use std::sync::{Arc, Mutex};
 
@@ -24,6 +25,7 @@ pub struct Recorder {
     clock: Arc<dyn Clock>,
     fs: Arc<dyn Fs>,
     events: Arc<dyn Events>,
+    log: Arc<dyn Log>,
     inner: Mutex<Inner>,
 }
 
@@ -34,6 +36,7 @@ impl Recorder {
         clock: Arc<dyn Clock>,
         fs: Arc<dyn Fs>,
         events: Arc<dyn Events>,
+        log: Arc<dyn Log>,
     ) -> Self {
         Recorder {
             cap,
@@ -41,6 +44,7 @@ impl Recorder {
             clock,
             fs,
             events,
+            log,
             inner: Mutex::new(Inner {
                 st: St::Idle,
                 since: 0,
@@ -86,6 +90,8 @@ impl Recorder {
         if i.st != St::Idle {
             return Err("Já existe uma gravação em andamento.".into());
         }
+        self.log
+            .info(&format!("gravação: iniciar ({})", cfg_line(cfg)));
         validate(cfg)?;
         let dir = match &cfg.dir {
             Some(d) => d.clone(),
@@ -96,7 +102,12 @@ impl Recorder {
         self.enc.open(&path, cfg)?;
         if let Err(e) = self.cap.start(cfg, self.enc.clone()) {
             // Fecha o arquivo aberto; o erro original é o que importa.
-            let _ = self.enc.finish();
+            let r = self.enc.finish();
+            self.log.error(&format!("captura: falha ao iniciar: {e}"));
+            if let Err(e2) = r {
+                self.log
+                    .warn(&format!("encoder: falha ao fechar o arquivo: {e2}"));
+            }
             return Err(e);
         }
         *i = Inner {
@@ -106,6 +117,7 @@ impl Recorder {
             path,
         };
         self.emit(&i);
+        self.log.info(&format!("gravação: iniciada em {}", i.path));
         Ok(())
     }
 
@@ -119,6 +131,10 @@ impl Recorder {
         i.acc += self.clock.mono_ms().saturating_sub(i.since);
         i.st = St::Paused;
         self.emit(&i);
+        self.log.info(&format!(
+            "gravação: pausada em {} s",
+            self.snapshot(&i).secs
+        ));
         Ok(())
     }
 
@@ -132,6 +148,7 @@ impl Recorder {
         i.since = self.clock.mono_ms();
         i.st = St::Rec;
         self.emit(&i);
+        self.log.info("gravação: retomada");
         Ok(())
     }
 
@@ -143,14 +160,24 @@ impl Recorder {
         if i.st == St::Idle {
             return Err("Não há gravação em andamento.".into());
         }
+        let secs = self.snapshot(&i).secs;
         let r_cap = self.cap.stop();
         let r_enc = self.enc.finish();
         let path = std::mem::take(&mut i.path);
         i.st = St::Idle;
         i.acc = 0;
         self.emit(&i);
+        // Registra as duas falhas (o chamador só recebe a primeira).
+        if let Err(e) = &r_cap {
+            self.log.error(&format!("captura: falha ao parar: {e}"));
+        }
+        if let Err(e) = &r_enc {
+            self.log.error(&format!("encoder: falha ao finalizar: {e}"));
+        }
         r_cap?;
         r_enc?;
+        self.log
+            .info(&format!("gravação: finalizada ({secs} s) em {path}"));
         Ok(path)
     }
 }
@@ -167,6 +194,7 @@ mod tests {
         clock: Arc<FakeClock>,
         fs: Arc<FakeFs>,
         ev: Arc<FakeEvents>,
+        log: Arc<FakeLog>,
         rec: Recorder,
     }
 
@@ -176,12 +204,14 @@ mod tests {
         let clock = Arc::new(FakeClock::default());
         let fs = Arc::new(FakeFs::default());
         let ev = Arc::new(FakeEvents::default());
+        let log = Arc::new(FakeLog::default());
         let rec = Recorder::new(
             cap.clone(),
             enc.clone(),
             clock.clone(),
             fs.clone(),
             ev.clone(),
+            log.clone(),
         );
         Kit {
             cap,
@@ -189,6 +219,7 @@ mod tests {
             clock,
             fs,
             ev,
+            log,
             rec,
         }
     }
@@ -313,6 +344,35 @@ mod tests {
         assert_eq!(k.rec.start(&cfg()).unwrap_err().0, "cap");
         assert_eq!(k.enc.calls.all().last().unwrap(), "finish");
         assert_eq!(k.rec.state(), RecState::idle());
+        assert!(k.log.has("captura: falha ao iniciar: cap"));
+        // falha ao fechar o arquivo também é registrada
+        let k = kit();
+        k.cap.fail.set("start", "cap");
+        k.enc.fail.set("finish", "fin");
+        assert_eq!(k.rec.start(&cfg()).unwrap_err().0, "cap");
+        assert!(k.log.has("falha ao fechar o arquivo: fin"));
+    }
+
+    #[test]
+    fn registra_o_ciclo_no_log() {
+        let k = kit();
+        k.rec.start(&cfg()).unwrap();
+        k.clock.advance(2000);
+        k.rec.pause().unwrap();
+        k.rec.resume().unwrap();
+        k.rec.stop().unwrap();
+        let m = k.log.msgs();
+        assert!(m[0].starts_with("gravação: iniciar (modo=Screen"));
+        assert_eq!(
+            m[1],
+            "gravação: iniciada em /videos/cap-20260102-030405.mp4"
+        );
+        assert_eq!(m[2], "gravação: pausada em 2 s");
+        assert_eq!(m[3], "gravação: retomada");
+        assert_eq!(
+            m[4],
+            "gravação: finalizada (2 s) em /videos/cap-20260102-030405.mp4"
+        );
     }
 
     #[test]
@@ -338,6 +398,8 @@ mod tests {
         assert_eq!(k.rec.stop().unwrap_err().0, "cap");
         assert_eq!(k.rec.state(), RecState::idle());
         assert_eq!(lk(&k.ev.states).last().unwrap().state, St::Idle);
+        assert!(k.log.has("captura: falha ao parar: cap"));
+        assert!(k.log.has("encoder: falha ao finalizar: enc"));
 
         let k = kit();
         k.rec.start(&cfg()).unwrap();

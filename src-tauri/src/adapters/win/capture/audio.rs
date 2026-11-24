@@ -2,7 +2,8 @@
 //! microfone e loopback do sistema. O WASAPI converte para 48 kHz,
 //! 16 bits, estéreo (`AUTOCONVERTPCM`), então não há reamostragem no app.
 
-use super::super::com::wide;
+use super::super::com::{log_err, wide};
+use crate::logging;
 use cap_core::media::{CH, RATE};
 use cap_core::{CapErr, Res};
 use windows::core::PCWSTR;
@@ -21,6 +22,7 @@ pub struct Reader {
 }
 
 fn fail(e: windows::core::Error) -> CapErr {
+    log_err("áudio (WASAPI)", &e);
     CapErr::from(format!("Falha ao abrir o áudio: {}", e.message()))
 }
 
@@ -30,8 +32,10 @@ impl Reader {
         let en = enumerator()?;
         let w = wide(id);
         // SAFETY: `w` é terminado em nulo e vive durante a chamada.
-        let dev = unsafe { en.GetDevice(PCWSTR(w.as_ptr())) }
-            .map_err(|_| CapErr::from("O microfone escolhido não está disponível."))?;
+        let dev = unsafe { en.GetDevice(PCWSTR(w.as_ptr())) }.map_err(|e| {
+            log_err(&format!("microfone: GetDevice({id})"), &e);
+            CapErr::from("O microfone escolhido não está disponível.")
+        })?;
         Reader::open(&dev, false)
     }
 
@@ -39,8 +43,10 @@ impl Reader {
     pub fn system() -> Res<Reader> {
         let en = enumerator()?;
         // SAFETY: consulta simples ao enumerador.
-        let dev = unsafe { en.GetDefaultAudioEndpoint(eRender, eConsole) }
-            .map_err(|_| CapErr::from("Nenhuma saída de áudio padrão foi encontrada."))?;
+        let dev = unsafe { en.GetDefaultAudioEndpoint(eRender, eConsole) }.map_err(|e| {
+            log_err("som do sistema: GetDefaultAudioEndpoint", &e);
+            CapErr::from("Nenhuma saída de áudio padrão foi encontrada.")
+        })?;
         Reader::open(&dev, true)
     }
 
@@ -69,6 +75,14 @@ impl Reader {
                 .map_err(fail)?;
             let cap: IAudioCaptureClient = client.GetService().map_err(fail)?;
             client.Start().map_err(fail)?;
+            logging::get().info(&format!(
+                "áudio: leitor aberto ({})",
+                if loopback {
+                    "som do sistema"
+                } else {
+                    "microfone"
+                }
+            ));
             Ok(Reader { client, cap })
         }
     }

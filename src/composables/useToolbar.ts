@@ -1,8 +1,9 @@
 // Lógica da janela da barra de ferramentas (dados e ações próprios).
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { buildCfg, targetOpts } from '../domain/cfg'
 import { msg } from '../domain/err'
 import { idle, isActive, isPaused } from '../domain/rec'
+import { barSize } from '../domain/size'
 import { fmt } from '../domain/time'
 import type { Devices, Mode, RecState, Region, Targets } from '../domain/types'
 import { ports } from '../ports'
@@ -29,8 +30,16 @@ export function useToolbar() {
   const paused = computed(() => isPaused(rec.value))
   const clock = computed(() => fmt(rec.value.secs))
   const opts = computed(() => targetOpts(mode.value, tg.value))
+  // Linha extra: configurações abertas ou escolha de alvo (várias telas/janelas).
+  const extra = computed(() => cfg.value || (mode.value !== 'area' && opts.value.length > 1))
+  const size = computed(() => barSize(active.value, extra.value))
   // O medidor só mostra nível quando há microfone escolhido.
   const lvl = computed(() => (mic.value ? level.value : 0))
+
+  // A janela acompanha o conteúdo (pílula, barra, barra com linha extra).
+  watch(size, (d) => {
+    b.fitBar(d.w, d.h).catch((e: unknown) => { err.value = msg(e) })
+  })
 
   /** Executa uma ação capturando o erro para exibição. */
   async function run(fn: () => Promise<void>): Promise<void> {
@@ -104,6 +113,14 @@ export function useToolbar() {
     return run(() => (id === '' ? b.micStop() : b.micStart(id)))
   }
 
+  /** Abre a pasta de logs no Explorer. */
+  const openLogs = (): Promise<void> => run(() => b.openLogs())
+
+  /** Minimiza a janela da barra. */
+  const minimize = (): Promise<void> => run(() => b.minimize())
+  /** Fecha a barra (encerra o app). */
+  const close = (): Promise<void> => run(() => b.close())
+
   const toggleSys = (): void => { sys.value = !sys.value }
   const toggleCfg = (): void => { cfg.value = !cfg.value }
 
@@ -128,7 +145,7 @@ export function useToolbar() {
 
   return {
     mode, cam, mic, tid, sys, fps, devs, level, rec, err, saved, cfg,
-    active, paused, clock, opts, lvl,
-    init, dispose, start, stop, pause, toggle, setMode, setCam, toggleSys, toggleCfg, setMic,
+    active, paused, clock, opts, lvl, extra, size,
+    init, dispose, start, stop, pause, toggle, setMode, setCam, toggleSys, toggleCfg, setMic, openLogs, minimize, close,
   }
 }

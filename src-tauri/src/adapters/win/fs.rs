@@ -1,10 +1,21 @@
 //! Adaptador `Fs`: pasta Vídeos do usuário e criação de diretórios.
 
-use super::com::{init, take_pwstr};
+use super::com::{init, log_err, take_pwstr};
 use cap_core::media::join_win;
 use cap_core::ports::Fs;
 use cap_core::{CapErr, Res};
-use windows::Win32::UI::Shell::{FOLDERID_Videos, SHGetKnownFolderPath, KF_FLAG_DEFAULT};
+use windows::Win32::UI::Shell::{
+    FOLDERID_LocalAppData, FOLDERID_Videos, SHGetKnownFolderPath, KF_FLAG_DEFAULT,
+};
+
+/// Pasta `%LOCALAPPDATA%` (`None` se o shell não a informar).
+pub fn local_app_data() -> Option<String> {
+    init();
+    // SAFETY: devolve string alocada pelo COM, liberada em `take_pwstr`.
+    unsafe { SHGetKnownFolderPath(&FOLDERID_LocalAppData, KF_FLAG_DEFAULT, None) }
+        .ok()
+        .map(take_pwstr)
+}
 
 /// Sistema de arquivos real.
 pub struct WinFs;
@@ -18,8 +29,12 @@ impl Fs for WinFs {
     fn videos_dir(&self) -> Res<String> {
         init();
         // SAFETY: devolve string alocada pelo COM, liberada em `take_pwstr`.
-        let p = unsafe { SHGetKnownFolderPath(&FOLDERID_Videos, KF_FLAG_DEFAULT, None) }
-            .map_err(|_| CapErr::from("Não foi possível localizar a pasta Vídeos."))?;
+        let p = unsafe { SHGetKnownFolderPath(&FOLDERID_Videos, KF_FLAG_DEFAULT, None) }.map_err(
+            |e| {
+                log_err("SHGetKnownFolderPath(Videos)", &e);
+                CapErr::from("Não foi possível localizar a pasta Vídeos.")
+            },
+        )?;
         Ok(take_pwstr(p))
     }
 

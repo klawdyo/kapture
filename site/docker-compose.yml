@@ -1,0 +1,21 @@
+# Exemplo. Copie .env.example para .env (ou exporte as variáveis) antes de subir.
+#   docker compose up -d --build
+services:
+  site:
+    build:
+      context: .
+      args:
+        # O site é estático: estes valores entram no build, não no runtime.
+        NUXT_PUBLIC_DOWNLOAD_URL: ${NUXT_PUBLIC_DOWNLOAD_URL:-https://github.com/klawdyo/kapture/releases/latest}
+        NUXT_PUBLIC_SITE_URL: ${NUXT_PUBLIC_SITE_URL:-}
+    image: cap-site:latest
+    ports:
+      - "${PORT:-8080}:80"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    security_opt:
+      - no-new-privileges:true

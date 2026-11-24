@@ -3,6 +3,7 @@
 //! O `id` de monitor/janela é o próprio HMONITOR/HWND (os handles do
 //! Windows usam só 32 bits significativos, mesmo em 64 bits).
 
+use super::com::log_err;
 use cap_core::domain::{Monitor, Targets as Data, Win};
 use cap_core::ports::Targets;
 use cap_core::{CapErr, Res};
@@ -55,7 +56,11 @@ pub fn monitors() -> Vec<Monitor> {
     let mut v: Vec<Monitor> = Vec::new();
     // SAFETY: o callback só roda durante a chamada, com `v` vivo.
     unsafe {
-        let _ = EnumDisplayMonitors(None, None, Some(cb), LPARAM(&mut v as *mut _ as isize));
+        if let Err(e) =
+            EnumDisplayMonitors(None, None, Some(cb), LPARAM(&mut v as *mut _ as isize)).ok()
+        {
+            log_err("EnumDisplayMonitors", &e);
+        }
     }
     v
 }
@@ -114,7 +119,9 @@ pub fn windows_list() -> Vec<Win> {
     let mut v: Vec<Win> = Vec::new();
     // SAFETY: o callback só roda durante a chamada, com `v` vivo.
     unsafe {
-        let _ = EnumWindows(Some(cb), LPARAM(&mut v as *mut _ as isize));
+        if let Err(e) = EnumWindows(Some(cb), LPARAM(&mut v as *mut _ as isize)) {
+            log_err("EnumWindows", &e);
+        }
     }
     v
 }

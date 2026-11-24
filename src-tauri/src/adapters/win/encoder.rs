@@ -4,7 +4,7 @@
 //! quando existe). O arquivo só é criado no primeiro quadro de vídeo,
 //! porque só então sabemos o tamanho real da captura (área/janela).
 
-use super::com::{mf_init, wide};
+use super::com::{log_err, mf_init, wide};
 use cap_core::domain::{Frame, RecCfg};
 use cap_core::media::{
     audio_ts_ms, bgra_to_nv12, fit_bgra, has_audio, pack, video_bitrate, CH, RATE,
@@ -66,6 +66,7 @@ impl MfEncoder {
 
 /// Converte erro do Windows em mensagem para o usuário.
 fn fail(what: &str, e: Error) -> CapErr {
+    log_err(what, &e);
     CapErr::from(format!("{what}: {}", e.message()))
 }
 
@@ -237,9 +238,20 @@ impl Encoder for MfEncoder {
             let (w, h) = (f.w & !1, f.h & !1);
             match begin(job, w, h) {
                 Ok(l) => {
+                    crate::logging::get().info(&format!(
+                        "encoder MF: arquivo criado {} ({}x{}, {} fps, bitrate {} bps, áudio={})",
+                        job.path,
+                        w,
+                        h,
+                        job.fps,
+                        video_bitrate(w, h, job.fps),
+                        l.asx.is_some()
+                    ));
                     // Descarrega o áudio que chegou antes.
                     for (pcm, ts) in std::mem::take(&mut job.pend) {
-                        let _ = write_pcm(&l, &pcm, ts);
+                        if let Err(e) = write_pcm(&l, &pcm, ts) {
+                            log_err("encoder: descarregar áudio pendente", &e);
+                        }
                     }
                     job.live = Some(l);
                 }

@@ -3,6 +3,7 @@
 //! Atenção: `Targets` aqui é a porta; o tipo de dados é `domain::Targets`.
 
 use crate::domain::{Devices, Frame, RecCfg, RecState, Region, Stamp};
+use crate::log::Lvl;
 use crate::Res;
 use std::sync::Arc;
 
@@ -72,6 +73,24 @@ pub trait Events: Send + Sync {
     fn rec_state(&self, st: &RecState);
 }
 
+/// Registro de diagnóstico (log em disco). Nunca falha nem bloqueia o
+/// chamador: erros de escrita são descartados pela implementação.
+pub trait Log: Send + Sync {
+    fn write(&self, lvl: Lvl, msg: &str);
+    fn debug(&self, msg: &str) {
+        self.write(Lvl::Debug, msg);
+    }
+    fn info(&self, msg: &str) {
+        self.write(Lvl::Info, msg);
+    }
+    fn warn(&self, msg: &str) {
+        self.write(Lvl::Warn, msg);
+    }
+    fn error(&self, msg: &str) {
+        self.write(Lvl::Error, msg);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -89,5 +108,6 @@ mod tests {
         ok::<dyn Cam>();
         ok::<dyn Picker>();
         ok::<dyn Events>();
+        ok::<dyn Log>();
     }
 }
