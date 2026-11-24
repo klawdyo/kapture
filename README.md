@@ -21,17 +21,15 @@ Site: https://klawdyo.github.io/kapture/ | Download: [última versão](https://g
 
 ## Como baixar
 
-Baixe o `kapture-win-Setup.exe` na aba **Releases** do repositório e execute-o. A instalação é de um clique e **por usuário**: o kapture vai para `%LOCALAPPDATA%\kapture`, sem pedir administrador, e cria atalhos na área de trabalho e no menu iniciar. Para desinstalar, use **Configurações > Aplicativos > Aplicativos instalados** (Apps e recursos).
+Baixe o `kapture.exe` na aba **Releases** do repositório e execute-o. Não há instalação: é um único arquivo, que você pode guardar onde quiser (por exemplo, na área de trabalho), sem pedir administrador. Para remover, apague o arquivo (e, se quiser, a pasta de logs, veja abaixo).
 
-> **Aviso:** o instalador não é assinado digitalmente. O Windows SmartScreen pode exibir um alerta; clique em "Mais informações" e depois em "Executar assim mesmo". Confira o `SHA256SUMS` publicado junto, se quiser verificar a integridade.
-
-O `.msi` continua nos Releases como alternativa temporária, até o novo instalador ser aprovado.
+> **Aviso:** o `kapture.exe` não é assinado digitalmente. O Windows SmartScreen pode exibir um alerta; clique em "Mais informações" e depois em "Executar assim mesmo". Confira o `SHA256SUMS` publicado junto, se quiser verificar a integridade.
 
 O `.msix` para a Microsoft Store está desligado por enquanto (veja [docs/msix-store.md](docs/msix-store.md)).
 
 ## Decisão técnica: sem FFmpeg
 
-O kapture usa o encoder nativo do Windows, o **Media Foundation** (H.264 + AAC em MP4), em vez de embutir o FFmpeg. Isso reduz o instalador em dezenas de megabytes. A webcam entra no vídeo por captura direta da janela dela, sem filtros de overlay.
+O kapture usa o encoder nativo do Windows, o **Media Foundation** (H.264 + AAC em MP4), em vez de embutir o FFmpeg. Isso reduz o executável em dezenas de megabytes. A webcam entra no vídeo por captura direta da janela dela, sem filtros de overlay.
 
 ## Onde ficam os logs
 
@@ -43,13 +41,11 @@ Para abrir a pasta, clique na engrenagem da barra e depois em **Abrir logs**. Se
 
 ## Atualizações
 
-Ao abrir, o kapture procura uma versão nova sozinho. Na barra de título aparece, em cinza e letra pequena, **Verificando atualizações…**. Se houver versão nova, ela é baixada automaticamente (**Atualizando… 42%**) e, ao terminar, surge uma bolinha vermelha piscando com **Reinicie para atualizar**: um clique reinicia o app já na versão nova. Se não houver atualização ou faltar internet, o texto some sem aviso (o motivo só vai para o log). Nada disso aparece durante a gravação. Com a opção de movimento reduzido do Windows ligada, a bolinha fica parada.
+Ao abrir, o kapture consulta o GitHub uma vez para saber se há versão nova. Se houver, aparece **Atualização disponível** com a bolinha, e o clique mostra as versões instalada e nova com os botões **Baixar** (abre a página do release no navegador, onde está o `kapture.exe` novo) e **Depois**. A troca é manual: baixe o novo `kapture.exe` e use-o no lugar do antigo. Se não houver atualização ou faltar internet, nada aparece (o motivo só vai para o log). Nada disso aparece durante a gravação.
 
-Isso só funciona quando o app foi instalado pelo **Setup do Velopack** (`kapture-win-Setup.exe`). Rodando solto, pelo MSI ou em desenvolvimento, o app só avisa: aparece **Atualização disponível** com a bolinha, e o clique mostra as versões instalada e nova com os botões **Baixar** (abre a página do release no navegador) e **Depois**.
+O que é enviado: apenas a requisição comum a `api.github.com/repos/klawdyo/kapture/releases/latest`, sem nenhum dado seu além do que toda requisição HTTPS carrega. Não há opção para desativar; para bloquear, negue a conexão do app a `api.github.com` no firewall.
 
-O que é enviado: apenas as requisições comuns ao GitHub (`github.com/klawdyo/kapture/releases/latest/download/` para o índice e o pacote, ou `api.github.com/repos/klawdyo/kapture/releases/latest` no aviso simples), sem enviar nenhum dado seu além do que toda requisição HTTPS carrega. A consulta é feita uma vez por abertura. Não há opção para desativar; para bloquear, negue a conexão do app a `github.com` e `api.github.com` no firewall.
-
-O mecanismo de atualização (Velopack) fica atrás da porta `Updater` do núcleo, então pode ser trocado por outro sem mexer na interface.
+A atualização fica atrás da porta `Updater` do núcleo, então um futuro atualizador automático pode entrar sem mexer na interface.
 
 ## Desenvolvimento
 

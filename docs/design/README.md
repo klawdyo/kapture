@@ -17,7 +17,7 @@ Como foram geradas: Chromium (Playwright, 2x) rodando o frontend com o backend F
 | `05-webcam.png` | Janela da webcam: moldura chanfrada, alça de arrasto, marcas vermelhas no meio dos lados |
 | `06-seletor-de-area.png` | Seletor de área: sem escurecer a tela, cantos em L, 8 alças, etiqueta centralizada |
 | `07` a `09` | Atualização: "Verificando atualizações…", "Atualizando… 42%", bolinha + "Reinicie para atualizar" |
-| `10-atualizacao-aviso-baixar.png` | Fallback fora do Velopack: aviso com Baixar e Depois |
+| `10-atualizacao-aviso-baixar.png` | Aviso (sem atualização automática) com Baixar e Depois |
 | `11-site-claro.png`, `12-site-escuro.png` | Site de apresentação (Nuxt UI) |
 
 ## Decisões que valem para qualquer sessão
@@ -28,5 +28,5 @@ Como foram geradas: Chromium (Playwright, 2x) rodando o frontend com o backend F
 - **Pílula de gravação:** só ponto, cronômetro e **parar**. **Sem botão de pausa** (retirado a pedido do dono; `pause`/`resume` continuam no backend, sem uso na UI). Compacta, arrastável por todo o corpo (menos o botão de parar) e semitransparente em repouso.
 - **Painel e janelas:** tudo arrastável pelas áreas sem controle. A barra e o seletor de área ficam fora do vídeo (`set_content_protected`), mas continuam arrastáveis.
 - **Seletor de área:** não escurece o fundo; o retângulo é movível e redimensionável pelas 8 alças.
-- **Atualização:** o app verifica ao abrir, **baixa sozinho** e mostra texto fino e discreto na barra de título. Nada disso aparece durante a gravação.
-- **Instalador:** por usuário, sem administrador. O visual do instalador antigo (WiX/MSI clássico) foi considerado inaceitável pelo dono. Tamanho é prioridade: o Setup do Velopack (11,7 MB) está sob avaliação e tende a ser descartado.
+- **Atualização:** o app verifica ao abrir e avisa com a bolinha (Baixar abre a página do release). A troca automática do exe é pendência (CLAUDE.md). Nada disso aparece durante a gravação.
+- **Distribuição:** só o `kapture.exe` solto, sem instalador, sem MSI, sem Velopack (decisão do dono). Tamanho é prioridade.

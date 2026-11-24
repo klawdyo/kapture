@@ -7,7 +7,7 @@
 - Comentários e textos de UI em português; identificadores em inglês, nomes curtos (`price`, não `salePrice`).
 - Clean Architecture: domínio e casos de uso não conhecem Tauri nem Windows.
 - Toda capacidade externa é uma PORTA (trait/interface) com implementação REAL e FAKE.
-- Meta: menor instalador possível. Sem FFmpeg: encoder = Media Foundation (H.264+AAC -> MP4).
+- Meta: menor executável possível (distribuição só pelo `kapture.exe` solto). Sem FFmpeg: encoder = Media Foundation (H.264+AAC -> MP4).
   A webcam entra no vídeo por captura direta da janela dela (sem overlay filter).
 
 ## Layout
@@ -17,7 +17,7 @@ crates/cap-core/            # Rust puro: domain, app (use cases), ports, fakes, 
 src-tauri/                  # adaptadores Windows (cfg(windows)) + comandos Tauri finos
 src/                        # Vue 3 + TS: ui/ (widgets genéricos), domain/, ports/, windows/, composables/
 packaging/msix/             # AppxManifest + script MakeAppx
-.github/workflows/          # ci.yml (testes) e release.yml (MSI + MSIX)
+.github/workflows/          # ci.yml (testes) e release.yml (exe solto; MSIX desligado)
 ```
 
 ## Tipos (JSON camelCase)
@@ -80,9 +80,8 @@ Porta `Log` (`ports.rs`: `write(lvl, msg)` mais `debug/info/warn/error`), nunca 
 - A toolbar tem, na linha extra (engrenagem), o botão "Abrir logs" (`Backend.openLogs` -> `open_logs`).
 
 ## Atualizações
-Porta `Updater` (cap-core): `supported()`, `check() -> Option<UpdInfo{version}>`, `download(progress 0..=100)`, `apply_and_restart()`. Adaptador real: Velopack em `src-tauri/src/adapters/win/updater.rs`
-(`HttpSource` em `https://github.com/klawdyo/kapture/releases/latest/download/`); fora do Windows, `FakeUpdater` com `supported=false`. O caso de uso `Update` (máquina de estados pura) roda o ciclo uma vez e emite `update-state`:
-`{kind:'idle'|'checking'|'none'|'fallback'|'err'}`, `{kind:'downloading', pct:0..100}`, `{kind:'ready', version}`. `fallback` = app não instalado pelo Velopack; `err` = falha de rede/feed/download (só vai ao log em disco como warn).
+Porta `Updater` (cap-core): `supported()`, `check() -> Option<UpdInfo{version}>`, `download(progress 0..=100)`, `apply_and_restart()`. Adaptador de produção, em todos os SOs: `NoUpdater` (`src-tauri/src/adapters/noupd.rs`, `supported=false`, demais métodos devolvem erro); `FakeUpdater` nos testes. O caso de uso `Update` (máquina de estados pura) roda o ciclo uma vez e emite `update-state`:
+`{kind:'idle'|'checking'|'none'|'fallback'|'err'}`, `{kind:'downloading', pct:0..100}`, `{kind:'ready', version}`. `fallback` = sem atualização automática (`supported() = false`); `err` = falha de rede/feed/download (só vai ao log em disco como warn).
 
 Frontend: `Backend.updateStart()` (`update_start`), `Backend.updateApply()` (`update_apply`) e `Backend.onUpdate(cb)` (`update-state`), reais e FAKE. `useUpdate.init` busca `version()`, assina `onUpdate` e chama `updateStart`
 (uma vez ao montar a toolbar). Fase (`Phase`): `idle`, `checking`, `downloading`, `ready`, `available`. Textos exatos (`updText` em `domain/upd.ts`): "Verificando atualizações…", "Atualizando…" (com " 42%" quando `pct > 0`),
@@ -93,7 +92,7 @@ Frontend: `Backend.updateStart()` (`update_start`), `Backend.updateApply()` (`up
 - Fallback (`fallback`, ou se o comando falhar): `useUpdate` consulta `Updates.check(current)` (REAL `realUpdates`: `fetch` GET com timeout de 5 s a `https://api.github.com/repos/klawdyo/kapture/releases/latest`; FAKE `FakeUpdates`),
   mostra "Atualização disponível" e `UpdateDot` (compõe `ui/Dot` e `ui/Pop`) com a mensagem de versões instalada e nova e **Baixar** (`Backend.openUrl` -> `open_url`) e **Depois**. Regras puras em `domain/upd.ts`: semver X.Y.Z ignorando o prefixo `v`,
   prerelease e rascunho ignorados, escolha da mais nova, `html_url` começando em `https://github.com/klawdyo/kapture/releases/`. Bolinha estática com `prefers-reduced-motion`.
-- CSP: `connect-src 'self' ipc: http://ipc.localhost https://api.github.com`. Capability `core:app:allow-version`. Velopack faz as requisições pelo Rust.
+- CSP: `connect-src 'self' ipc: http://ipc.localhost https://api.github.com`. Capability `core:app:allow-version`.
 
 ## Eventos (emit)
 `mic-level` `{level:number 0..1}` | `rec-state` RecState | `update-state` UpdState (ver Atualizações) | `hotkey` (Ctrl+Shift+R alterna gravação)
