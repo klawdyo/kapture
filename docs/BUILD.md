@@ -48,4 +48,10 @@ A logo oficial (raster 380x380, fundo opaco com grade, recortada da Figura 1 da 
 
 ## Release
 
-Criar uma tag `v*` (ex.: `git tag v0.1.0 && git push --tags`) ou rodar o workflow manualmente. O `release.yml` executa os testes do `ci.yml`, gera MSI e MSIX, imprime os tamanhos e publica `.msi`, `.msix` e `SHA256SUMS` no GitHub Release. A versão vem da tag (sem o `v`); em execução manual, do `package.json`.
+O release é automático: o push na `main` (merge da `dev`) executa o `release.yml`, que calcula a versão pelos commits (veja [versioning.md](versioning.md)), roda os testes do `ci.yml`, gera o MSI, cria a tag `vX.Y.Z` e publica `.msi` e `SHA256SUMS` no GitHub Release com as notas geradas. A geração do MSIX está desligada no release (veja [msix-store.md](msix-store.md)). Sem commits `feat`, `fix` ou breaking desde a última tag, nada é publicado. Também pode ser disparado manualmente na `main`.
+
+## CI e site
+
+O `ci.yml` roda em pull request (para `main` ou `dev`) e em push na `dev`. Branches de feature não disparam nada por push: só o PR. O push na `main` não roda o CI por conta própria, porque o `release.yml` o chama antes de publicar. O job `msi` (build de verificação do instalador) roda apenas em PR, já que o release gera o seu próprio MSI. O job `site` confirma que o `npm run generate` do Nuxt funciona.
+
+O site (`site/`) é publicado pelo `pages.yml` em https://klawdyo.github.io/kapture/ quando a `main` recebe mudanças em `site/` (ou manualmente). O build usa `NUXT_APP_BASE_URL=/kapture/`. Em Settings > Pages do repositório, a fonte deve ser **GitHub Actions**.

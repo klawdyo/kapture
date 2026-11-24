@@ -20,7 +20,7 @@ Baixe o instalador `.msi` na aba **Releases** do repositório e execute-o.
 
 > **Aviso:** o MSI não é assinado digitalmente. O Windows SmartScreen pode exibir um alerta; clique em "Mais informações" e depois em "Executar assim mesmo". Confira o `SHA256SUMS` publicado junto, se quiser verificar a integridade.
 
-Também é publicado um `.msix` sem assinatura, destinado ao envio à Microsoft Store.
+O `.msix` para a Microsoft Store está desligado por enquanto (veja [docs/msix-store.md](docs/msix-store.md)).
 
 ## Decisão técnica: sem FFmpeg
 
@@ -44,6 +44,8 @@ npx tauri dev          # app em modo desenvolvimento (Windows)
 cargo test -p cap-core # núcleo, 100% de cobertura
 npx vitest run         # testes do front-end
 ```
+
+Fluxo: o desenvolvimento acontece na `dev`; a `main` só recebe releases (merge da `dev`), que criam a tag e o GitHub Release automaticamente. Os commits seguem Conventional Commits e a versão é calculada a partir deles. Veja [CONTRIBUTING.md](CONTRIBUTING.md) e [docs/versioning.md](docs/versioning.md).
 
 A arquitetura está em [docs/CONTRACT.md](docs/CONTRACT.md) e o empacotamento em [docs/BUILD.md](docs/BUILD.md).
 

@@ -13,17 +13,27 @@
 param(
   [Parameter(Mandatory)] [string] $Version,
   [Parameter(Mandatory)] [string] $Exe,
-  [string] $Out = "dist/Cap.msix"
+  [string] $Out = "dist/Cap.msix",
+  # Valores do Partner Center (públicos; ver docs/msix-store.md). Sem eles, usa placeholders de teste.
+  [string] $IdentityName = $env:MSIX_IDENTITY_NAME,
+  [string] $Publisher = $env:MSIX_PUBLISHER,
+  [string] $PublisherDisplayName = $env:MSIX_PUBLISHER_DISPLAY
 )
 $ErrorActionPreference = "Stop"
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not (Test-Path $Exe)) { throw "Executável não encontrado: $Exe" }
 
-# MSIX exige versão com 4 partes (A.B.C.D)
-$parts = ($Version -split '[-+]')[0].Split('.')
-while ($parts.Count -lt 4) { $parts += '0' }
-$msixVersion = ($parts[0..3]) -join '.'
+# Store exige Major.Minor.Build.0: completa até 3 partes e força o 4º segmento em 0
+$parts = @(($Version -split '[-+]')[0].Split('.'))
+while ($parts.Count -lt 3) { $parts += '0' }
+$msixVersion = ($parts[0..2] + '0') -join '.'
+
+if (-not $IdentityName)         { $IdentityName = "PLACEHOLDER.Cap";            Write-Warning "MSIX_IDENTITY_NAME ausente: usando placeholder." }
+if (-not $Publisher)            { $Publisher = "CN=PLACEHOLDER-PUBLISHER-ID";   Write-Warning "MSIX_PUBLISHER ausente: usando placeholder." }
+if (-not $PublisherDisplayName) { $PublisherDisplayName = "PLACEHOLDER Publisher"; Write-Warning "MSIX_PUBLISHER_DISPLAY ausente: usando placeholder." }
+# Valores vão para atributos XML: escapa &, <, > e aspas
+function Esc([string] $t) { [System.Security.SecurityElement]::Escape($t) }
 
 $stage = Join-Path ([System.IO.Path]::GetTempPath()) ("cap-msix-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $stage | Out-Null
@@ -31,7 +41,11 @@ New-Item -ItemType Directory -Path (Join-Path $stage "Assets") | Out-Null
 
 Copy-Item $Exe (Join-Path $stage "cap.exe")
 Copy-Item (Join-Path $here "Assets/*") (Join-Path $stage "Assets")
-(Get-Content (Join-Path $here "AppxManifest.xml") -Raw).Replace("@VERSION@", $msixVersion) |
+(Get-Content (Join-Path $here "AppxManifest.xml") -Raw).
+  Replace("@VERSION@", $msixVersion).
+  Replace("@IDENTITY_NAME@", (Esc $IdentityName)).
+  Replace("@PUBLISHER@", (Esc $Publisher)).
+  Replace("@PUBLISHER_DISPLAY@", (Esc $PublisherDisplayName)) |
   Set-Content (Join-Path $stage "AppxManifest.xml") -Encoding utf8
 
 # Localiza o MakeAppx.exe mais recente do Windows SDK

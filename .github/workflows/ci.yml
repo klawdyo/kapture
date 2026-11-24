@@ -2,8 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # main não entra: o release.yml chama este workflow antes de publicar (sem execução duplicada)
+    branches: [dev]
   pull_request:
+    branches: [main, dev]
   workflow_call:
 
 concurrency:
