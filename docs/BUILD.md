@@ -64,7 +64,7 @@ O script é idempotente: regrava sempre os mesmos arquivos a partir das duas log
 
 ## Release
 
-O release é automático: o push na `main` (merge da `dev`) executa o `release.yml`, que calcula a versão pelos commits (veja [versioning.md](versioning.md)), roda os testes do `ci.yml`, gera o MSI, cria a tag `vX.Y.Z` e publica `.msi` e `SHA256SUMS` no GitHub Release com as notas geradas. A geração do MSIX está desligada no release (veja [msix-store.md](msix-store.md)). Sem commits `feat`, `fix` ou breaking desde a última tag, nada é publicado. Também pode ser disparado manualmente na `main`.
+O release é automático: o push na `main` (merge da `dev`) executa o `release.yml`, que calcula a versão pelos commits (veja [versioning.md](versioning.md)), gera o MSI (sem repetir os testes, que o PR para a `main` já rodou), cria a tag `vX.Y.Z` e publica `.msi` e `SHA256SUMS` no GitHub Release com as notas geradas. A geração do MSIX está desligada no release (veja [msix-store.md](msix-store.md)). Sem commits `feat`, `fix` ou breaking desde a última tag, nada é publicado. Também pode ser disparado manualmente na `main`, e nesse caso os testes rodam antes.
 
 ## CI e site
 
@@ -72,7 +72,7 @@ O `ci.yml` roda só em pull request (para `main` ou `dev`) e quando o `release.y
 
 - **PR para `dev`:** só o job Linux (fmt, clippy, cobertura de 100%, vitest) e o job `site` (confirma o `npm run generate` do Nuxt). É o caminho rápido.
 - **PR para `main`:** os mesmos jobs mais o job Windows (`cargo test --workspace` e `cargo check` do Tauri).
-- **Release (`release.yml`):** a suíte completa (Linux, Windows e site) e a geração do MSI.
+- **Release (`release.yml`):** só gera o MSI e publica, porque o PR para a `main` já rodou a suíte completa sobre o mesmo código. Os testes só rodam de novo no disparo manual (`workflow_dispatch`), que não tem PR por trás. Para rodá-los sempre, use o `if` comentado do job `tests`.
 - **Desligado, mas mantido comentado em `ci.yml`:** o push na `dev` e o job `msi` (build de verificação do instalador, que o release já faz). Para voltar a usá-los, basta descomentar os blocos.
 
 O site (`site/`) é publicado pelo `pages.yml` em https://klawdyo.github.io/kapture/ quando a `main` recebe mudanças em `site/` (ou manualmente). O build usa `NUXT_APP_BASE_URL=/kapture/`. Em Settings > Pages do repositório, a fonte deve ser **GitHub Actions**.

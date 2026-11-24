@@ -40,14 +40,20 @@ jobs:
             echo "publish=true" >> "$GITHUB_OUTPUT"
           fi
 
+  # Testes: o push na main sempre vem de um PR que já rodou o CI completo sobre o mesmo código,
+  # então repetir aqui só gasta tempo. Só rodam no disparo manual (sem PR por trás).
+  # Para voltar a rodar sempre antes de publicar, troque o `if` pela linha comentada.
   tests:
     needs: version
-    if: needs.version.outputs.publish == 'true'
+    # if: needs.version.outputs.publish == 'true'
+    if: needs.version.outputs.publish == 'true' && github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/ci.yml
 
   build:
     name: Instaladores (MSI)
     needs: [version, tests]
+    # Com os testes pulados (push na main), o build segue; se rodaram e falharam, não publica.
+    if: ${{ !cancelled() && needs.version.outputs.publish == 'true' && (needs.tests.result == 'success' || needs.tests.result == 'skipped') }}
     runs-on: windows-latest
     permissions:
       contents: write
