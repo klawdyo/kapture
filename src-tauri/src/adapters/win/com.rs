@@ -3,7 +3,9 @@
 use std::sync::Once;
 use windows::core::{Error, PWSTR};
 use windows::Win32::Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL, MF_VERSION};
-use windows::Win32::System::Com::{CoInitializeEx, CoTaskMemFree, COINIT_MULTITHREADED};
+use windows::Win32::System::Com::{
+    CoInitializeEx, CoTaskMemFree, COINIT_APARTMENTTHREADED, COINIT_MULTITHREADED,
+};
 
 thread_local! {
     /// Inicializa o COM (MTA) uma vez por thread que usa as APIs.
@@ -22,6 +24,17 @@ pub fn log_err(ctx: &str, e: &Error) {
         cap_core::log::hresult(e.code().0),
         e.message().trim()
     ));
+}
+
+/// Inicializa o COM da thread principal em modo apartamento (STA), antes de criar qualquer janela.
+/// O tao (OleInitialize) e o WebView2 exigem STA; se a thread ficar em MTA, o tao entra em pânico
+/// com RPC_E_CHANGED_MODE e o app some sem janela (falha vista em campo). Só registra no log.
+pub fn init_main_sta() {
+    // SAFETY: chamada padrão do COM na thread atual.
+    match unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }.ok() {
+        Ok(()) => crate::logging::get().info("COM da thread principal em modo STA"),
+        Err(e) => log_err("CoInitializeEx(STA) na thread principal", &e),
+    }
 }
 
 /// Garante COM inicializado na thread atual.

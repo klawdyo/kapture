@@ -15,6 +15,7 @@
     "windows": [
       {
         "label": "toolbar",
+        "dragDropEnabled": false,
         "title": "kapture",
         "url": "index.html",
         "width": 720,
@@ -30,6 +31,7 @@
       },
       {
         "label": "webcam",
+        "dragDropEnabled": false,
         "title": "Webcam",
         "url": "webcam.html",
         "width": 240,
@@ -49,6 +51,7 @@
       },
       {
         "label": "region-selector",
+        "dragDropEnabled": false,
         "title": "Selecionar área",
         "url": "region.html",
         "fullscreen": true,

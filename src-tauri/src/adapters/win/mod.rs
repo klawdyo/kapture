@@ -16,11 +16,12 @@ mod worker;
 
 pub use capture::WinCapture;
 pub use clock::WinClock;
+pub use com::init_main_sta;
 pub use devs::WinDevs;
 pub use encoder::MfEncoder;
 
 pub use fs::{local_app_data, WinFs};
 pub use opener::WinOpener;
-pub use sys::os_version;
+pub use sys::{alert, os_version};
 pub use targets::WinTargets;
 pub use updater::VpkUpdater;

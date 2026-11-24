@@ -139,6 +139,9 @@ pub fn run() {
     // Primeiro o log: assim qualquer falha de inicialização fica registrada.
     logging::install_panic_hook();
     logging::log_start();
+    // COM da thread principal em STA antes de qualquer janela (evita o pânico do OleInitialize).
+    #[cfg(windows)]
+    adapters::win::init_main_sta();
     tauri::Builder::default()
         .setup(|app| {
             let core = wire(app.handle().clone());
