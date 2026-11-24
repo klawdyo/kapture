@@ -68,6 +68,7 @@ vpk pack `
   --packVersion $Version `
   --packDir $packDir `
   --mainExe kapture.exe `
+  --runtime win-x64 `
   --icon src-tauri/icons/icon.ico `
   --packTitle kapture `
   --packAuthors klawdyo `
