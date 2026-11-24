@@ -44,4 +44,4 @@ A logo oficial (raster 380x380, fundo opaco com grade, recortada da Figura 1 da 
 
 ## Release
 
-Criar uma tag `v*` (ex.: `git tag v0.1.0 && git push --tags`) ou rodar o workflow manualmente. O `release.yml` executa os testes do `ci.yml`, gera MSI e MSIX, imprime os tamanhos e publica `.msi`, `.msix` e `SHA256SUMS` no GitHub Release. A versão vem da tag (sem o `v`); em execução manual, do `package.json`.
+O release é automático: o push na `main` (merge da `dev`) executa o `release.yml`, que calcula a versão pelos commits (veja [versioning.md](versioning.md)), roda os testes do `ci.yml`, gera MSI e MSIX, cria a tag `vX.Y.Z` e publica `.msi`, `.msix` e `SHA256SUMS` no GitHub Release com as notas geradas. Sem commits `feat` ou `fix` desde a última tag, nada é publicado. Também pode ser disparado manualmente na `main`.

@@ -1,22 +1,60 @@
 name: Release
 
+# Roda quando a main recebe o merge da dev (ou manualmente). Calcula a versão
+# pelos commits desde a última tag (docs/versioning.md), cria a tag vX.Y.Z e o
+# GitHub Release. Sem commits feat/fix novos, nada é publicado.
 on:
   push:
-    tags: ['v*']
+    branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
+  version:
+    name: Calcular versão
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      publish: ${{ steps.v.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - id: v
+        run: |
+          base=$(node scripts/version.mjs base)
+          next=$(node scripts/version.mjs next)
+          echo "Última versão: $base; próxima: $next"
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          if [ "$base" = "$next" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "Sem commits feat/fix desde a última tag: nada a publicar."
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
   tests:
+    needs: version
+    if: needs.version.outputs.publish == 'true'
     uses: ./.github/workflows/ci.yml
 
   build:
     name: Instaladores (MSI e MSIX)
-    needs: tests
+    needs: [version, tests]
     runs-on: windows-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v4
@@ -25,22 +63,13 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Versão a partir da tag
-        id: ver
+      - name: Notas do release
         shell: pwsh
-        run: |
-          if ($env:GITHUB_REF -like 'refs/tags/v*') {
-            $v = $env:GITHUB_REF_NAME.TrimStart('v')
-          } else {
-            $v = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          }
-          "version=$v" >> $env:GITHUB_OUTPUT
-          "Versão: $v"
+        run: node scripts/version.mjs notes > RELEASE_NOTES.md
 
-      - name: Aplicar versão no tauri.conf.json
+      - name: Aplicar versão (tauri.conf.json, package.json e Cargo.toml)
         shell: pwsh
-        run: |
-          node -e "const f='src-tauri/tauri.conf.json';const c=JSON.parse(require('fs').readFileSync(f,'utf8'));c.version=process.argv[1];require('fs').writeFileSync(f,JSON.stringify(c,null,2))" "${{ steps.ver.outputs.version }}"
+        run: node scripts/version.mjs apply "${{ needs.version.outputs.version }}"
 
       - name: Gerar MSI (WiX)
         shell: pwsh
@@ -53,11 +82,16 @@ jobs:
       - name: Gerar MSIX (MakeAppx)
         continue-on-error: true
         shell: pwsh
+        # Dados públicos da identidade do app na Store (GitHub Variables, não secrets)
+        env:
+          MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME }}
+          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER }}
+          MSIX_PUBLISHER_DISPLAY: ${{ vars.MSIX_PUBLISHER_DISPLAY }}
         run: >
           ./packaging/msix/build-msix.ps1
-          -Version "${{ steps.ver.outputs.version }}"
+          -Version "${{ needs.version.outputs.version }}"
           -Exe (Get-ChildItem target/release/*.exe | Select-Object -First 1).FullName
-          -Out dist/Cap-${{ steps.ver.outputs.version }}-x64.msix
+          -Out dist/Cap-${{ needs.version.outputs.version }}-x64.msix
 
       - name: Reunir artefatos, tamanhos e SHA256
         shell: pwsh
@@ -77,15 +111,15 @@ jobs:
           name: instaladores
           path: dist/*
 
-      # Publica ao empurrar uma tag v* ou ao disparar manualmente (nesse caso o release cria a tag vX.Y.Z)
+      # Cria a tag vX.Y.Z no commit da main e o Release com as notas geradas
       - name: Publicar no GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.ver.outputs.version }}
+          tag_name: v${{ needs.version.outputs.version }}
           target_commitish: ${{ github.sha }}
+          name: v${{ needs.version.outputs.version }}
+          body_path: RELEASE_NOTES.md
           files: |
             dist/*.msi
             dist/*.msix
             dist/SHA256SUMS
-          generate_release_notes: true

@@ -19,10 +19,10 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'scripts/**/*.test.mjs'],
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.{ts,vue}'],
+      include: ['src/**/*.{ts,vue}', 'scripts/version.mjs'],
       exclude: ['src/**/*.test.ts', 'src/**/*.d.ts'],
       reporter: ['text', 'text-summary'],
       thresholds: { lines: 100, branches: 100, functions: 100, statements: 100 },

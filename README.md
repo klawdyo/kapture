@@ -35,6 +35,8 @@ cargo test -p cap-core # núcleo, 100% de cobertura
 npx vitest run         # testes do front-end
 ```
 
+Fluxo: o desenvolvimento acontece na `dev`; a `main` só recebe releases (merge da `dev`), que criam a tag e o GitHub Release automaticamente. Os commits seguem Conventional Commits e a versão é calculada a partir deles. Veja [CONTRIBUTING.md](CONTRIBUTING.md) e [docs/versioning.md](docs/versioning.md).
+
 A arquitetura está em [docs/CONTRACT.md](docs/CONTRACT.md) e o empacotamento em [docs/BUILD.md](docs/BUILD.md).
 
 ## Licença
