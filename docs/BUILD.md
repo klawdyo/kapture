@@ -56,7 +56,7 @@ O script (idempotente) lê a versão do crate `velopack` no `Cargo.lock`, instal
 
 **Regra: o crate `velopack` e o `vpk` têm de ter a mesma versão.** Ao subir o crate em `src-tauri/Cargo.toml`, o script já acompanha o novo `Cargo.lock`; não fixe a versão do `vpk` em outro lugar. Hoje: 1.2.161. O exe também precisa chamar `velopack::VelopackApp::build().run();` como primeira coisa do `main` (feito em `src-tauri/src/main.rs`, só no Windows); sem isso o `vpk pack` reprova o exe e o Setup mostraria um aviso de hook.
 
-**Medir o tamanho antes do release:** o job `installer` do `ci.yml` está **comentado** (o release já gera o instalador). Descomentado, todo pull request para a `main` o roda e ele gera o Setup com a versão fictícia `0.0.1-pr.N`, mostra os tamanhos no resumo do job e publica o artefato `kapture-setup` (7 dias) para baixar e testar o visual da instalação. Em teste local com um exe fictício, o Setup.exe tem cerca de 7,6 MB só do instalador embutido, além do `Update.exe` (cerca de 2 MB) e do app comprimido; o número real do kapture só sai nesse job.
+**Medir o tamanho antes do release:** todo pull request para a `main` roda o job `installer` do `ci.yml`, que gera o Setup com a versão fictícia `0.0.1-pr.N`, mostra os tamanhos no resumo do job e publica o artefato `kapture-setup` (7 dias) para baixar e testar o visual da instalação. Em teste local com um exe fictício, o Setup.exe tem cerca de 7,6 MB só do instalador embutido, além do `Update.exe` (cerca de 2 MB) e do app comprimido; o número real do kapture só sai nesse job.
 
 No `release.yml` o passo roda logo depois do MSI e anexa ao Release `kapture-win-Setup.exe`, os `.nupkg`, `Portable.zip`, `releases.win.json`, `assets.win.json`, o MSI e o `SHA256SUMS` (que cobre todos). O comentário no passo explica como remover o MSI depois da aprovação.
 
@@ -101,14 +101,14 @@ O script é idempotente: regrava sempre os mesmos arquivos a partir das duas log
 
 ## Release
 
-O release é **manual**: em Actions, workflow Release, "Run workflow" na `main`. Ele executa o `release.yml`, que calcula a versão pelos commits (veja [versioning.md](versioning.md)), gera o MSI e o instalador Velopack (sem repetir os testes, que o PR para a `main` já rodou), cria a tag `vX.Y.Z` e publica `kapture-win-Setup.exe`, os `.nupkg`, `Portable.zip`, os índices `releases.win.json` e `assets.win.json`, o `.msi` e o `SHA256SUMS` no GitHub Release com as notas geradas. A geração do MSIX está desligada no release (veja [msix-store.md](msix-store.md)). Sem commits `feat`, `fix` ou breaking desde a última tag, nada é publicado. Como o release só roda quando você dispara, os testes rodam antes. O gatilho automático (push na `main`) está comentado em `release.yml`; para voltar a ter release a cada merge, basta descomentar.
+O release é automático: o push na `main` (merge da `dev`) executa o `release.yml`, que calcula a versão pelos commits (veja [versioning.md](versioning.md)), gera o MSI e o instalador Velopack (sem repetir os testes, que o PR para a `main` já rodou), cria a tag `vX.Y.Z` e publica `kapture-win-Setup.exe`, os `.nupkg`, `Portable.zip`, os índices `releases.win.json` e `assets.win.json`, o `.msi` e o `SHA256SUMS` no GitHub Release com as notas geradas. A geração do MSIX está desligada no release (veja [msix-store.md](msix-store.md)). Sem commits `feat`, `fix` ou breaking desde a última tag, nada é publicado. Também pode ser disparado manualmente na `main`, e nesse caso os testes rodam antes.
 
 ## CI e site
 
-O `ci.yml` roda só em pull request (para `main` ou `dev`) e quando o `release.yml` o chama. Não há CI por push: o PR já roda os testes, e o release é manual.
+O `ci.yml` roda só em pull request (para `main` ou `dev`) e quando o `release.yml` o chama. Não há CI por push: o PR já roda os testes e o push na `main` fica por conta do release.
 
 - **PR para `dev`:** só o job Linux (fmt, clippy, cobertura de 100%, vitest) e o job `site` (confirma o `npm run generate` do Nuxt). É o caminho rápido.
-- **PR para `main`:** os mesmos jobs mais o job Windows (`cargo test --workspace` e `cargo check` do Tauri). O job `installer` (Setup.exe de teste do Velopack, com tamanhos no resumo) está comentado.
+- **PR para `main`:** os mesmos jobs mais o job Windows (`cargo test --workspace` e `cargo check` do Tauri) e o job `installer` (Setup.exe de teste do Velopack, com tamanhos no resumo).
 - **Release (`release.yml`):** só gera os instaladores e publica, porque o PR para a `main` já rodou a suíte completa sobre o mesmo código. Os testes só rodam de novo no disparo manual (`workflow_dispatch`), que não tem PR por trás. Para rodá-los sempre, use o `if` comentado do job `tests`.
 - **Desligado, mas mantido comentado em `ci.yml`:** o push na `dev` e o job `msi` (build de verificação do instalador, que o release já faz). Para voltar a usá-los, basta descomentar os blocos.
 
