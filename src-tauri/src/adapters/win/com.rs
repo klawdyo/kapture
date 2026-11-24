@@ -26,12 +26,18 @@ pub fn log_err(ctx: &str, e: &Error) {
     ));
 }
 
-/// Inicializa o COM da thread principal em modo apartamento (STA), antes de criar qualquer janela.
-/// O tao (OleInitialize) e o WebView2 exigem STA; se a thread ficar em MTA, o tao entra em pânico
-/// com RPC_E_CHANGED_MODE e o app some sem janela (falha vista em campo). Só registra no log.
-pub fn init_main_sta() {
+/// Inicializa o COM da thread principal em modo apartamento (STA), antes de qualquer janela e de
+/// qualquer outra chamada de COM. O tao (OleInitialize) e o WebView2 exigem STA; se a thread já
+/// estiver em MTA, o tao entra em pânico com RPC_E_CHANGED_MODE e o app some sem janela.
+/// Não registra no log: ele ainda não existe nesse ponto (use `log_main_sta` depois).
+pub fn init_main_sta() -> windows::core::Result<()> {
     // SAFETY: chamada padrão do COM na thread atual.
-    match unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }.ok() {
+    unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }.ok()
+}
+
+/// Registra no log o resultado de `init_main_sta`.
+pub fn log_main_sta(r: windows::core::Result<()>) {
+    match r {
         Ok(()) => crate::logging::get().info("COM da thread principal em modo STA"),
         Err(e) => log_err("CoInitializeEx(STA) na thread principal", &e),
     }

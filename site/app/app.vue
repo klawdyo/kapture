@@ -2,7 +2,7 @@
 const config = useRuntimeConfig()
 const base = String(config.public.siteUrl || '').replace(/\/$/, '')
 const title = 'kapture, gravador de tela leve para Windows'
-const description = 'Gravador de tela para Windows com menos de 2 MB: grave tela, janela ou área, com webcam e microfone, com atalho Ctrl+Shift+R.'
+const description = 'Gravador de tela para Windows com menos de 3 MB: grave tela, janela ou área, com webcam e microfone, com atalho Ctrl+Shift+R.'
 const ogImage = `${base}/og.png`
 
 useHead({

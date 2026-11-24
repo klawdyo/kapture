@@ -134,12 +134,16 @@ pub(crate) fn fit_toolbar(app: &AppHandle, w: f64, h: f64) -> Result<(), String>
 
 /// Ponto de entrada do app.
 pub fn run() {
-    // Primeiro o log: assim qualquer falha de inicialização fica registrada.
+    // PRIMEIRA coisa do processo: COM da thread principal em STA. O tao (OleInitialize) e o WebView2
+    // exigem STA; qualquer chamada de COM em MTA antes disto (o log já fez isso ao achar a pasta)
+    // trava a thread em MTA e o app morre ao criar a janela (RPC_E_CHANGED_MODE).
+    #[cfg(windows)]
+    let sta = adapters::win::init_main_sta();
+    // Depois o log: assim qualquer falha de inicialização fica registrada.
     logging::install_panic_hook();
     logging::log_start();
-    // COM da thread principal em STA antes de qualquer janela (evita o pânico do OleInitialize).
     #[cfg(windows)]
-    adapters::win::init_main_sta();
+    adapters::win::log_main_sta(sta);
     tauri::Builder::default()
         .setup(|app| {
             let core = wire(app.handle().clone());

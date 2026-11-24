@@ -15,7 +15,7 @@ mod worker;
 
 pub use capture::WinCapture;
 pub use clock::WinClock;
-pub use com::init_main_sta;
+pub use com::{init_main_sta, log_main_sta};
 pub use devs::WinDevs;
 pub use encoder::MfEncoder;
 
