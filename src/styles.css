@@ -1,6 +1,6 @@
 /* Estilos globais e tokens de design (grafite azulado + vermelho só para gravar). */
 :root {
-  --bg: rgba(26, 33, 48, 0.9); /* fallback do mica: painel semi-opaco */
+  --bg: rgba(26, 33, 48, 0.9); /* fundo semi-opaco do painel (sem mica) */
   --bd: rgba(255, 255, 255, 0.16);
   --fg: #f1f5f9;
   --mut: #b4bfd0; /* contraste AA sobre o painel */

@@ -72,8 +72,9 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Painel ocupa a janela inteira: o mica e a sombra vêm do sistema; o fundo
-   semi-opaco abaixo é o fallback quando o efeito não se aplica. */
+/* Painel ocupa a janela inteira. A janela é transparente e sem sombra nem efeito do sistema
+   (o DWM desenharia uma borda preta de canto reto em volta): o arredondamento, a borda fina
+   e o fundo semi-opaco vêm só do CSS. */
 .bar {
   position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; flex-direction: column;
   border-radius: 10px; background: var(--bg); border: 1px solid var(--bd); overflow: hidden;

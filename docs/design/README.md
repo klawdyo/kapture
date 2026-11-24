@@ -4,7 +4,7 @@ Estas imagens são a **fonte de verdade do visual atual**, aprovada pelo dono do
 
 > **O protótipo do PDF (`docs/ui-reference.png` e `docs/especificacao.pdf`) é HISTÓRICO.** Ele serviu de ponto de partida e foi superado por estas imagens. Não refaça a interface para parecer com o PDF, e não reintroduza o que foi retirado (veja "Decisões" abaixo). Se uma tela mudar de propósito, atualize a imagem correspondente neste diretório no mesmo commit.
 
-Como foram geradas: Chromium (Playwright, 2x) rodando o frontend com o backend FAKE. Por isso **não mostram** o mica e a sombra reais do Windows, e a tipografia no Windows usa Segoe UI. O que vale aqui é a estrutura, as proporções, os textos e as cores.
+Como foram geradas: Chromium (Playwright, 2x) rodando o frontend com o backend FAKE. A tipografia no Windows usa Segoe UI. O que vale aqui é a estrutura, as proporções, os textos e as cores.
 
 ## Telas
 
