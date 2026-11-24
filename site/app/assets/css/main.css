@@ -49,6 +49,13 @@ section[id], main[id] { scroll-margin-top: 5rem; }
   .rec-dot { animation: rec-pulse 1.6s ease-in-out infinite; }
 }
 
+/* Nome do produto: vermelho da bolinha da logo (#F93847, amostrado de assets/logo_light_transparent.png).
+   Token único, usado SÓ no wordmark "kapture". Contraste WCAG: 3,69:1 sobre branco e 5,39:1 sobre zinc-950.
+   No claro fica abaixo de 4,5:1 (AA de texto normal), então o wordmark é sempre texto grande
+   (20 px em negrito, acima de 18,66 px bold), que exige 3:1. Não usar em texto pequeno. */
+:root { --brand: #f93847; }
+.wordmark { color: var(--brand); font-size: 1.25rem; line-height: 1.75rem; font-weight: 700; letter-spacing: -0.01em; }
+
 /* Primário grafite com contraste alto (o padrão neutral-500 ficava lavado). */
 :root { --ui-primary: var(--ui-color-neutral-900); }
 .dark { --ui-primary: var(--ui-color-neutral-100); }

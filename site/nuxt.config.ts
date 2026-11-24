@@ -1,4 +1,4 @@
-// Site estático do Cap. `npm run generate` gera .output/public.
+// Site estático do kapture. `npm run generate` gera .output/public.
 // Variáveis NUXT_PUBLIC_* são lidas em tempo de build (o site é estático).
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',

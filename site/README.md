@@ -1,6 +1,6 @@
-# Site do Cap
+# Site do kapture
 
-Site de apresentação do Cap (gravador de tela leve para Windows). É um projeto
+Site de apresentação do kapture (gravador de tela leve para Windows). É um projeto
 [Nuxt](https://nuxt.com) 4 com [Nuxt UI](https://ui.nuxt.com) 4 e TypeScript, gerado como
 **site estático** (`nuxt generate`) e servido por nginx em um container.
 
@@ -45,10 +45,10 @@ Requer Node 22.
 
 ```bash
 cd site
-docker build -t cap-site \
-  --build-arg NUXT_PUBLIC_DOWNLOAD_URL=https://exemplo.com/downloads/Cap.msi \
-  --build-arg NUXT_PUBLIC_SITE_URL=https://cap.exemplo.com .
-docker run -d --name cap-site -p 8080:80 --restart unless-stopped cap-site
+docker build -t kapture-site \
+  --build-arg NUXT_PUBLIC_DOWNLOAD_URL=https://exemplo.com/downloads/kapture.msi \
+  --build-arg NUXT_PUBLIC_SITE_URL=https://kapture.exemplo.com .
+docker run -d --name kapture-site -p 8080:80 --restart unless-stopped kapture-site
 curl -I http://localhost:8080/
 ```
 

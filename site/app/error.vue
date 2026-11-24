@@ -4,7 +4,7 @@ import type { NuxtError } from '#app'
 const props = defineProps<{ error: NuxtError }>()
 const is404 = computed(() => props.error?.statusCode === 404)
 useHead({ htmlAttrs: { lang: 'pt-BR' } })
-useSeoMeta({ title: is404.value ? 'Página não encontrada, Cap' : 'Algo deu errado, Cap', robots: 'noindex' })
+useSeoMeta({ title: is404.value ? 'Página não encontrada, kapture' : 'Algo deu errado, kapture', robots: 'noindex' })
 </script>
 
 <template>

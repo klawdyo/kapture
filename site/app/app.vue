@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const config = useRuntimeConfig()
 const base = String(config.public.siteUrl || '').replace(/\/$/, '')
-const title = 'Cap, gravador de tela leve para Windows'
+const title = 'kapture, gravador de tela leve para Windows'
 const description = 'Grave tela, janela ou área, com webcam e microfone, em um instalador de cerca de 1,5 MB. Atalho Ctrl+Shift+R e encoder nativo do Windows, sem FFmpeg.'
 const ogImage = `${base}/og.png`
 
@@ -17,12 +17,12 @@ useSeoMeta({
   description,
   ogType: 'website',
   ogLocale: 'pt_BR',
-  ogSiteName: 'Cap',
+  ogSiteName: 'kapture',
   ogTitle: title,
   ogDescription: description,
   ogUrl: base || undefined,
   ogImage,
-  ogImageAlt: 'Logo do Cap: obturador de câmera com ponto vermelho de gravação',
+  ogImageAlt: 'Logo do kapture: obturador de câmera com ponto vermelho de gravação',
   twitterCard: 'summary',
   twitterImage: ogImage
 })

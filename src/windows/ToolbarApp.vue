@@ -5,8 +5,10 @@ import DevSelect from '../components/DevSelect.vue'
 import ModeSwitch from '../components/ModeSwitch.vue'
 import RecBtn from '../components/RecBtn.vue'
 import TitleBar from '../components/TitleBar.vue'
+import UpdateDot from '../components/UpdateDot.vue'
 import VuMeter from '../components/VuMeter.vue'
 import { useToolbar } from '../composables/useToolbar'
+import { useUpdate } from '../composables/useUpdate'
 import logo from '../assets/logo.png'
 import { FPS } from '../domain/cfg'
 import Box from '../ui/Box.vue'
@@ -14,7 +16,12 @@ import Btn from '../ui/Btn.vue'
 import Select from '../ui/Select.vue'
 
 const t = reactive(useToolbar())
-onMounted(t.init)
+const u = reactive(useUpdate())
+// Ao abrir a janela: inicia a barra e consulta atualizações uma única vez.
+onMounted(() => {
+  void t.init()
+  void u.init()
+})
 onBeforeUnmount(t.dispose)
 </script>
 
@@ -33,9 +40,12 @@ onBeforeUnmount(t.dispose)
       <TitleBar @min="t.minimize()" @close="t.close()">
         <Box v-if="t.err" tag="span" class="err" :title="t.err" data-tauri-drag-region>{{ t.err }}</Box>
         <Box v-else-if="t.saved" tag="span" class="ok" :title="t.saved" data-tauri-drag-region>Salvo</Box>
+        <template #end>
+          <UpdateDot v-if="u.upd" :upd="u.upd" :cur="u.cur" :open="u.open" @toggle="u.toggle()" @download="u.download()" @later="u.later()" />
+        </template>
       </TitleBar>
       <Box class="row" data-tauri-drag-region>
-        <img :src="logo" class="logo" width="46" height="46" alt="Cap" draggable="false" data-tauri-drag-region />
+        <img :src="logo" class="logo" width="46" height="46" alt="kapture" draggable="false" data-tauri-drag-region />
         <Box class="sep" data-tauri-drag-region />
         <ModeSwitch :model-value="t.mode" @update:model-value="t.setMode" />
         <Box class="sep" data-tauri-drag-region />
@@ -64,7 +74,7 @@ onBeforeUnmount(t.dispose)
 /* Painel ocupa a janela inteira: o mica e a sombra vêm do sistema; o fundo
    semi-opaco abaixo é o fallback quando o efeito não se aplica. */
 .bar {
-  box-sizing: border-box; width: 100%; height: 100%; display: flex; flex-direction: column;
+  position: relative; box-sizing: border-box; width: 100%; height: 100%; display: flex; flex-direction: column;
   border-radius: 10px; background: var(--bg); border: 1px solid var(--bd); overflow: hidden;
   backdrop-filter: blur(18px);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);

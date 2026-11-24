@@ -1,7 +1,7 @@
 // Testes das telas (montadas com portas FAKE) e dos arquivos de entrada.
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { FakeBackend, FakeMedia } from '../ports/fake'
+import { FakeBackend, FakeMedia, FakeUpdates } from '../ports/fake'
 import { setPorts } from '../ports'
 import RegionSelector from './RegionSelector.vue'
 import ToolbarApp from './ToolbarApp.vue'
@@ -18,7 +18,7 @@ beforeEach(() => {
     wins: [],
   }
   b.dv = { cams: [{ id: 'c1', name: 'Cam' }], mics: [{ id: 'm1', name: 'Mic' }] }
-  setPorts({ backend: b, media: m })
+  setPorts({ backend: b, media: m, updates: new FakeUpdates() })
 })
 
 describe('ToolbarApp', () => {
@@ -112,12 +112,59 @@ describe('RegionSelector', () => {
   })
 })
 
+describe('ToolbarApp: atualização', () => {
+  const rel = 'https://github.com/klawdyo/kapture/releases/tag/v0.2.0'
+  const dot = 'button[aria-label="Atualização disponível"]'
+
+  it('sem atualização não mostra a bolinha e consulta uma vez', async () => {
+    const u = new FakeUpdates()
+    setPorts({ backend: b, media: m, updates: u })
+    const w = mount(ToolbarApp)
+    await flushPromises()
+    expect(w.find(dot).exists()).toBe(false)
+    expect(u.calls).toEqual(['0.1.0'])
+    w.unmount()
+  })
+  it('erro de rede não mostra nada', async () => {
+    const u = new FakeUpdates()
+    u.fail = new Error('offline')
+    setPorts({ backend: b, media: m, updates: u })
+    const w = mount(ToolbarApp)
+    await flushPromises()
+    expect(w.find(dot).exists()).toBe(false)
+    expect(w.find('.err').exists()).toBe(false)
+    w.unmount()
+  })
+  it('com atualização: bolinha, mensagem, Depois, Baixar e sem bolinha ao gravar', async () => {
+    const u = new FakeUpdates()
+    u.res = { version: '0.2.0', url: rel }
+    setPorts({ backend: b, media: m, updates: u })
+    const w = mount(ToolbarApp)
+    await flushPromises()
+    expect(w.find('[role="dialog"]').exists()).toBe(false)
+    await w.find(dot).trigger('click')
+    expect(w.find('[role="dialog"]').text()).toContain('Nova: v0.2.0')
+    await w.findAll('.act button')[1].trigger('click') // Depois
+    expect(w.find('[role="dialog"]').exists()).toBe(false)
+    expect(w.find(dot).exists()).toBe(true)
+    await w.find(dot).trigger('click')
+    await w.findAll('.act button')[0].trigger('click') // Baixar
+    expect(b.calls).toContainEqual(['openUrl', rel])
+    // modo compacto de gravação: sem bolinha
+    await w.find('button[title="Gravar"]').trigger('click')
+    await flushPromises()
+    expect(w.find('.pill').exists()).toBe(true)
+    expect(w.find(dot).exists()).toBe(false)
+    w.unmount()
+  })
+})
+
 describe('entradas', () => {
   it.each(['../main', '../webcam', '../region'])('%s monta o app', async (f) => {
     vi.resetModules()
     document.body.innerHTML = '<div id="app"></div>'
     // Após resetModules o módulo de portas é novo: reinjeta os FAKEs nele.
-    ;(await import('../ports')).setPorts({ backend: b, media: m })
+    ;(await import('../ports')).setPorts({ backend: b, media: m, updates: new FakeUpdates() })
     await import(/* @vite-ignore */ f)
     await flushPromises()
     expect(document.querySelector('#app')!.children.length).toBeGreaterThan(0)

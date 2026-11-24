@@ -1,8 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Cap",
+  "productName": "kapture",
+  "mainBinaryName": "kapture",
   "version": "0.1.0",
-  "identifier": "com.cap.recorder",
+  "identifier": "com.klawdyo.kapture",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
@@ -14,7 +15,7 @@
     "windows": [
       {
         "label": "toolbar",
-        "title": "Cap",
+        "title": "kapture",
         "url": "index.html",
         "width": 720,
         "height": 136,
@@ -61,7 +62,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self' ipc: http://ipc.localhost https://api.github.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
     }
   },
   "bundle": {
@@ -69,8 +70,9 @@
     "targets": ["msi"],
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
     "licenseFile": "license.rtf",
-    "publisher": "Cap",
-    "shortDescription": "Gravador de tela leve",
+    "publisher": "kapture",
+    "shortDescription": "kapture, gravador de tela leve",
+    "longDescription": "kapture é um gravador de tela leve para Windows, com webcam, microfone e encoder nativo.",
     "windows": {
       "webviewInstallMode": { "type": "skip" },
       "wix": { "language": "pt-BR" }

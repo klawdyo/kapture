@@ -50,7 +50,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   build:
-    name: Instaladores (MSI)
+    name: Instaladores (Velopack e MSI)
     needs: [version, tests]
     # Com os testes pulados (push na main), o build segue; se rodaram e falharam, não publica.
     if: ${{ !cancelled() && needs.version.outputs.publish == 'true' && (needs.tests.result == 'success' || needs.tests.result == 'skipped') }}
@@ -81,6 +81,16 @@ jobs:
         shell: pwsh
         run: npx tauri build --bundles msi
 
+      # Instalador moderno (Velopack): Setup.exe one-click, por usuário (%LOCALAPPDATA%\kapture),
+      # sem admin. Usa o kapture.exe que o passo do MSI acabou de compilar. O vpk é instalado
+      # na mesma versão do crate velopack (Cargo.lock). Escreve os tamanhos no resumo do job.
+      # REMOÇÃO DO MSI (quando o Setup.exe for aprovado): apague o passo "Gerar MSI (WiX)",
+      # troque o comando dele por `npx tauri build --no-bundle`, tire `dist/*.msi` daqui e de
+      # `files`, e remova a cópia do MSI no passo "Reunir artefatos".
+      - name: Gerar instalador Velopack
+        shell: pwsh
+        run: ./scripts/pack-velopack.ps1 -Version "${{ needs.version.outputs.version }}"
+
       # MSIX desligado até a identidade da Store e as imagens/logo estarem prontas.
       # Para religar, descomente este passo e a linha dist/*.msix em files (docs/msix-store.md).
       # - name: Gerar exe para o MSIX
@@ -98,14 +108,17 @@ jobs:
       #   run: >
       #     ./packaging/msix/build-msix.ps1
       #     -Version "${{ needs.version.outputs.version }}"
-      #     -Exe (Get-ChildItem target/release/*.exe | Select-Object -First 1).FullName
-      #     -Out dist/Cap-${{ needs.version.outputs.version }}-x64.msix
+      #     -Exe target/release/kapture.exe
+      #     -Out dist/kapture-${{ needs.version.outputs.version }}-x64.msix
 
       - name: Reunir artefatos, tamanhos e SHA256
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
           Get-ChildItem target/release/bundle/msi/*.msi | Copy-Item -Destination dist
+          # Velopack: Setup, pacotes (completo e delta, se houver versão anterior), Portable e índices
+          Get-ChildItem Releases/* -Include *-Setup.exe, *.nupkg, *-Portable.zip, releases.win.json, assets.win.json |
+            Copy-Item -Destination dist
           Get-ChildItem dist | ForEach-Object {
             "{0}: {1:N2} MB" -f $_.Name, ($_.Length / 1MB)
           }
@@ -130,4 +143,9 @@ jobs:
           # MSIX desligado: para religar, inclua a linha dist/*.msix na lista abaixo.
           files: |
             dist/*.msi
+            dist/*-Setup.exe
+            dist/*.nupkg
+            dist/*-Portable.zip
+            dist/releases.win.json
+            dist/assets.win.json
             dist/SHA256SUMS

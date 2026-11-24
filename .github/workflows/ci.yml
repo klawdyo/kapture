@@ -87,6 +87,35 @@ jobs:
       - run: npm ci
       - run: npm run generate
 
+  # Instalador de teste (Velopack): só em PR para a main. Gera o kapture-win-Setup.exe com uma
+  # versão fictícia (0.0.1-pr.N) e publica como artefato (7 dias) para baixar e conferir o visual
+  # do instalador ANTES do release. O resumo do job mostra os tamanhos (exe, Setup, nupkg, zip).
+  installer:
+    name: Instalador (Velopack, teste)
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Compilar o exe (sem bundle)
+        run: npx tauri build --no-bundle
+      - name: Empacotar com Velopack
+        shell: pwsh
+        run: ./scripts/pack-velopack.ps1 -Version 0.0.1-pr.${{ github.run_number }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kapture-setup
+          retention-days: 7
+          path: |
+            Releases/*-Setup.exe
+            Releases/*.nupkg
+
   # Job do MSI desligado: o release.yml já gera o MSI. Para voltar a validar o empacotamento
   # em todo PR, descomente o bloco abaixo.
 #   # Gera o MSI de verdade para validar a build e medir o tamanho (não roda no release, que já gera o seu)

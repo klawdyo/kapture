@@ -4,13 +4,13 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { boot, installErrorLog, MAX_LOGS } from './boot'
 import { setPorts } from './ports'
-import { FakeBackend, FakeMedia } from './ports/fake'
+import { FakeBackend, FakeMedia, FakeUpdates } from './ports/fake'
 
 let b: FakeBackend
 
 beforeEach(() => {
   b = new FakeBackend()
-  setPorts({ backend: b, media: new FakeMedia() })
+  setPorts({ backend: b, media: new FakeMedia(), updates: new FakeUpdates() })
 })
 
 const logs = () => b.calls.filter((c) => c[0] === 'logUi').map((c) => c[1] as { lvl: string; msg: string })

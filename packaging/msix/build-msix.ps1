@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-  Empacota o Cap em .msix com MakeAppx.exe (Windows SDK).
+  Empacota o kapture em .msix com MakeAppx.exe (Windows SDK).
 
 .EXAMPLE
-  ./packaging/msix/build-msix.ps1 -Version 0.1.0 -Exe target/release/cap.exe -Out dist/Cap.msix
+  ./packaging/msix/build-msix.ps1 -Version 0.1.0 -Exe target/release/kapture.exe -Out dist/kapture.msix
 
 .NOTES
   O pacote gerado NÃO é assinado. Isso basta para enviar à Microsoft Store
@@ -13,7 +13,7 @@
 param(
   [Parameter(Mandatory)] [string] $Version,
   [Parameter(Mandatory)] [string] $Exe,
-  [string] $Out = "dist/Cap.msix",
+  [string] $Out = "dist/kapture.msix",
   # Valores do Partner Center (públicos; ver docs/msix-store.md). Sem eles, usa placeholders de teste.
   [string] $IdentityName = $env:MSIX_IDENTITY_NAME,
   [string] $Publisher = $env:MSIX_PUBLISHER,
@@ -29,17 +29,17 @@ $parts = @(($Version -split '[-+]')[0].Split('.'))
 while ($parts.Count -lt 3) { $parts += '0' }
 $msixVersion = ($parts[0..2] + '0') -join '.'
 
-if (-not $IdentityName)         { $IdentityName = "PLACEHOLDER.Cap";            Write-Warning "MSIX_IDENTITY_NAME ausente: usando placeholder." }
+if (-not $IdentityName)         { $IdentityName = "PLACEHOLDER.kapture";            Write-Warning "MSIX_IDENTITY_NAME ausente: usando placeholder." }
 if (-not $Publisher)            { $Publisher = "CN=PLACEHOLDER-PUBLISHER-ID";   Write-Warning "MSIX_PUBLISHER ausente: usando placeholder." }
 if (-not $PublisherDisplayName) { $PublisherDisplayName = "PLACEHOLDER Publisher"; Write-Warning "MSIX_PUBLISHER_DISPLAY ausente: usando placeholder." }
 # Valores vão para atributos XML: escapa &, <, > e aspas
 function Esc([string] $t) { [System.Security.SecurityElement]::Escape($t) }
 
-$stage = Join-Path ([System.IO.Path]::GetTempPath()) ("cap-msix-" + [guid]::NewGuid())
+$stage = Join-Path ([System.IO.Path]::GetTempPath()) ("kapture-msix-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $stage | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $stage "Assets") | Out-Null
 
-Copy-Item $Exe (Join-Path $stage "cap.exe")
+Copy-Item $Exe (Join-Path $stage "kapture.exe")
 Copy-Item (Join-Path $here "Assets/*") (Join-Path $stage "Assets")
 (Get-Content (Join-Path $here "AppxManifest.xml") -Raw).
   Replace("@VERSION@", $msixVersion).

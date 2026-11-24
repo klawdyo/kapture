@@ -67,6 +67,11 @@ pub trait Picker: Send + Sync {
     fn pick(&self) -> Res<Option<Region>>;
 }
 
+/// Abre uma URL no navegador padrão do sistema.
+pub trait Opener: Send + Sync {
+    fn open(&self, url: &str) -> Res<()>;
+}
+
 /// Emissão de eventos para a interface.
 pub trait Events: Send + Sync {
     fn mic_level(&self, level: f32);

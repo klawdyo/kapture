@@ -1,4 +1,4 @@
-# Contrato de arquitetura do Cap (fonte única de verdade)
+# Contrato de arquitetura do kapture (fonte única de verdade)
 
 ## Princípios
 - Comentários e textos de UI em português; identificadores em inglês, nomes curtos (`price`, não `salePrice`).
@@ -41,6 +41,7 @@ packaging/msix/             # AppxManifest + script MakeAppx
 | mic_stop | - | void (desliga o VU meter e zera o nível) |
 | log_ui | `{lvl:"debug"\|"info"\|"warn"\|"error", msg:string}` | void (grava `[ui] msg` no log em disco; `lvl` desconhecido vira `info`) |
 | open_logs | - | void (abre a pasta de logs no Explorer; erro em português se não abrir) |
+| open_url | `{url:string}` | void (abre no navegador padrão via ShellExecuteW; SÓ aceita `https://github.com/klawdyo/kapture/releases/*` sem espaços, aspas, `\` nem `..`; outra URL devolve "Endereço não permitido."; porta `Opener`, caso de uso `UrlOpen`) |
 | fit_toolbar | w,h (px lógicos) | void (redimensiona a janela `toolbar` mantendo centro e base; `Backend.fitBar`) |
 Erros: string em português.
 
@@ -55,11 +56,11 @@ Câmera: o `id` de `Dev` da câmera é o nome amigável; o deviceId do getUserMe
 ## Logs em disco
 Porta `Log` (`ports.rs`: `write(lvl, msg)` mais `debug/info/warn/error`), nunca falha nem bloqueia.
 - REAL: `cap_core::logfile::FileLog` (só `std`, sem `log`/`tracing`), grava e dá `flush` a cada linha em
-  `%LOCALAPPDATA%\Cap\logs\cap.log` (SHGetKnownFolderPath, depois a env `LOCALAPPDATA`, depois a pasta temporária).
+  `%LOCALAPPDATA%\kapture\logs\kapture.log` (SHGetKnownFolderPath, depois a env `LOCALAPPDATA`, depois a pasta temporária).
 - FAKE: `fakes::FakeLog` (guarda `(Lvl, String)`; `msgs()`, `has()`).
 - Lógica pura em `cap_core::log` (100% de cobertura): linha `2026-01-02T03:04:05.678Z INFO  mensagem` (UTC, nível com 5
   colunas, quebras de linha viram continuação indentada), mensagens truncadas em 4000 bytes, rotação por tamanho
-  (`cap.log` passa a `cap.1.log` ao passar de 512 KB, no máximo 3 arquivos: `cap.log`, `cap.1.log`, `cap.2.log`),
+  (`kapture.log` passa a `kapture.1.log` ao passar de 512 KB, no máximo 3 arquivos: `kapture.log`, `kapture.1.log`, `kapture.2.log`),
   HRESULT em hexadecimal (`0x80070005`), texto do pânico e linhas de IPC/UI.
 - Quem registra: os casos de uso recebem a porta por injeção (`Recorder`: início/pausa/retomada/fim com a cfg, sem o id do
   microfone; `Lister`: contagens e nomes; `CamCtl`, `RegionPick`, `MicMeter`) e o decorador `LoggedEnc` envolve o
@@ -72,6 +73,18 @@ Porta `Log` (`ports.rs`: `write(lvl, msg)` mais `debug/info/warn/error`), nunca 
   100 mensagens por janela.
 - Minimizar e fechar usam a API de janela (`Backend.minimize`/`close`, permissões `core:window:allow-minimize`/`allow-close`); fechar a `toolbar` encerra o app.
 - A toolbar tem, na linha extra (engrenagem), o botão "Abrir logs" (`Backend.openLogs` -> `open_logs`).
+
+## Atualizações (frontend)
+Sem evento novo. Ao montar a toolbar, `useUpdate.init` roda uma vez: `Backend.version()` (`getVersion()` do Tauri) e `Updates.check(current)`
+(porta nova em `ports/types.ts`, REAL `realUpdates` com `fetch` GET e timeout de 5 s a `https://api.github.com/repos/klawdyo/kapture/releases/latest`,
+FAKE `FakeUpdates`) devolvem `{version, url}` ou `null`. Regras puras em `domain/upd.ts` (testadas): semver X.Y.Z ignorando o prefixo `v`,
+prerelease e rascunho ignorados, escolha da mais nova, resposta com `tag_name` e `html_url` e `html_url` começando em `https://github.com/klawdyo/kapture/releases/`.
+- Há atualização: `UpdateDot` (compõe `ui/Dot` e `ui/Pop`) mostra uma bolinha vermelha piscando na barra de título (estática com `prefers-reduced-motion`,
+  `aria-label` "Atualização disponível", foco visível). Clique abre a mensagem com versão instalada e nova e os botões **Baixar** (`Backend.openUrl` -> `open_url`) e **Depois**
+  (fecha; a bolinha continua). Nada disso aparece no modo compacto de gravação.
+- Sem atualização ou falha de rede: nada na tela; `Backend.logUi` registra `[update] atualização disponível vX`, `[update] sem atualização` (info)
+  ou `[update] falha ao verificar: ...` (warn). No máximo 1 requisição por abertura da janela.
+- CSP: `connect-src 'self' ipc: http://ipc.localhost https://api.github.com`. Capability `core:app:allow-version`.
 
 ## Eventos (emit)
 `mic-level` `{level:number 0..1}` | `rec-state` RecState | `hotkey` (Ctrl+Shift+R alterna gravação)

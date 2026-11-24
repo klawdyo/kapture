@@ -9,7 +9,7 @@ use std::fmt::Display;
 
 /// Tamanho máximo do arquivo ativo antes de rotacionar (512 KB).
 pub const MAX_BYTES: u64 = 512 * 1024;
-/// Quantidade máxima de arquivos (`cap.log`, `cap.1.log`, `cap.2.log`).
+/// Quantidade máxima de arquivos (`kapture.log`, `kapture.1.log`, `kapture.2.log`).
 pub const KEEP: usize = 3;
 /// Tamanho máximo de uma mensagem, em bytes.
 pub const MAX_MSG: usize = 4000;
@@ -95,9 +95,9 @@ pub fn line(ms: u64, lvl: Lvl, msg: &str) -> String {
 /// Nome do arquivo de índice `i` (0 = ativo).
 pub fn file_name(i: usize) -> String {
     if i == 0 {
-        "cap.log".to_string()
+        "kapture.log".to_string()
     } else {
-        format!("cap.{i}.log")
+        format!("kapture.{i}.log")
     }
 }
 
@@ -108,8 +108,8 @@ pub enum Step {
     Rename(String, String),
 }
 
-/// Passos para abrir espaço para um novo `cap.log` mantendo `keep` arquivos:
-/// apaga o mais antigo e desloca os demais (`cap.log` -> `cap.1.log` ...).
+/// Passos para abrir espaço para um novo `kapture.log` mantendo `keep` arquivos:
+/// apaga o mais antigo e desloca os demais (`kapture.log` -> `kapture.1.log` ...).
 pub fn rotation(keep: usize) -> Vec<Step> {
     let keep = keep.max(1);
     let mut v = vec![Step::Remove(file_name(keep - 1))];
@@ -130,15 +130,15 @@ pub fn hresult(code: i32) -> String {
     format!("0x{:08X}", code as u32)
 }
 
-/// Pasta de logs: `<LocalAppData>\Cap\logs`, ou `<temp>\Cap\logs` sem a base.
+/// Pasta de logs: `<LocalAppData>\kapture\logs`, ou `<temp>\kapture\logs` sem a base.
 pub fn logs_dir(base: Option<&str>, tmp: &str) -> String {
     let root = base.filter(|b| !b.is_empty()).unwrap_or(tmp);
-    join_win(&join_win(root, "Cap"), "logs")
+    join_win(&join_win(root, "kapture"), "logs")
 }
 
 /// Linha de abertura do app.
 pub fn start_line(ver: &str, os: &str, args: &[String]) -> String {
-    format!("Cap {ver} iniciado; Windows {os}; args: {args:?}")
+    format!("kapture {ver} iniciado; Windows {os}; args: {args:?}")
 }
 
 /// Resumo da configuração de gravação (o id do microfone não é registrado).
@@ -248,17 +248,17 @@ mod tests {
 
     #[test]
     fn rotacao() {
-        assert_eq!(file_name(0), "cap.log");
-        assert_eq!(file_name(2), "cap.2.log");
+        assert_eq!(file_name(0), "kapture.log");
+        assert_eq!(file_name(2), "kapture.2.log");
         assert_eq!(
             rotation(3),
             vec![
-                Step::Remove("cap.2.log".into()),
-                Step::Rename("cap.1.log".into(), "cap.2.log".into()),
-                Step::Rename("cap.log".into(), "cap.1.log".into()),
+                Step::Remove("kapture.2.log".into()),
+                Step::Rename("kapture.1.log".into(), "kapture.2.log".into()),
+                Step::Rename("kapture.log".into(), "kapture.1.log".into()),
             ]
         );
-        assert_eq!(rotation(1), vec![Step::Remove("cap.log".into())]);
+        assert_eq!(rotation(1), vec![Step::Remove("kapture.log".into())]);
         assert_eq!(rotation(0), rotation(1));
         assert!(!needs_rotation(0, 10_000_000, MAX_BYTES));
         assert!(!needs_rotation(100, 100, 200));
@@ -271,13 +271,13 @@ mod tests {
         assert_eq!(hresult(1), "0x00000001");
         assert_eq!(
             logs_dir(Some("C:\\Users\\a\\AppData\\Local"), "T"),
-            "C:\\Users\\a\\AppData\\Local\\Cap\\logs"
+            "C:\\Users\\a\\AppData\\Local\\kapture\\logs"
         );
-        assert_eq!(logs_dir(None, "C:\\Temp\\"), "C:\\Temp\\Cap\\logs");
-        assert_eq!(logs_dir(Some(""), "T"), "T\\Cap\\logs");
+        assert_eq!(logs_dir(None, "C:\\Temp\\"), "C:\\Temp\\kapture\\logs");
+        assert_eq!(logs_dir(Some(""), "T"), "T\\kapture\\logs");
         assert_eq!(
             start_line("1.0", "10.0.1", &["a".into()]),
-            "Cap 1.0 iniciado; Windows 10.0.1; args: [\"a\"]"
+            "kapture 1.0 iniciado; Windows 10.0.1; args: [\"a\"]"
         );
         assert_eq!(
             panic_text("boom", Some(("a.rs", 3)), "main", "bt"),

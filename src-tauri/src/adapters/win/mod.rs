@@ -8,6 +8,7 @@ mod encoder;
 
 mod fs;
 pub mod hotkey;
+mod opener;
 mod sys;
 mod targets;
 mod worker;
@@ -18,5 +19,6 @@ pub use devs::WinDevs;
 pub use encoder::MfEncoder;
 
 pub use fs::{local_app_data, WinFs};
+pub use opener::WinOpener;
 pub use sys::os_version;
 pub use targets::WinTargets;

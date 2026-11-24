@@ -1,10 +1,12 @@
 // Implementação REAL das portas: Tauri (invoke/listen) e getUserMedia.
+import { getVersion } from '@tauri-apps/api/app'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { getCurrentWindow, PhysicalSize } from '@tauri-apps/api/window'
 import { pickCam } from '../domain/cam'
 import { detail } from '../domain/err'
-import type { Backend, Media } from './types'
+import { parseRel, pickNew } from '../domain/upd'
+import type { Backend, Media, Updates } from './types'
 
 /** Assina um evento Tauri entregando só o payload. */
 const on = <T>(ev: string, cb: (p: T) => void) => listen<T>(ev, (e) => cb(e.payload))
@@ -39,6 +41,8 @@ export const realBackend: Backend = {
   micStop: () => call('mic_stop'),
   logUi,
   openLogs: () => call('open_logs'),
+  version: () => getVersion(),
+  openUrl: (url) => call('open_url', { url }),
   minimize: () => getCurrentWindow().minimize(),
   close: () => getCurrentWindow().close(),
   fitBar: (w, h) => call('fit_toolbar', { w, h }),
@@ -67,5 +71,29 @@ export const realMedia: Media = {
     }
     const id = pickCam(list, dev)
     return md.getUserMedia({ video: id ? { deviceId: { exact: id } } : true, audio: false })
+  },
+}
+
+/** Último release publicado (público, sem autenticação). */
+export const LATEST_URL = 'https://api.github.com/repos/klawdyo/kapture/releases/latest'
+/** Tempo máximo da consulta, em ms. */
+export const TIMEOUT = 5000
+
+export const realUpdates: Updates = {
+  // Uma única requisição GET, sem corpo nem dados do usuário; aborta em 5 s.
+  check: async (current) => {
+    const ctl = new AbortController()
+    const t = setTimeout(() => ctl.abort(), TIMEOUT)
+    try {
+      const r = await fetch(LATEST_URL, {
+        headers: { Accept: 'application/vnd.github+json' },
+        signal: ctl.signal,
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      const rel = parseRel(await r.json())
+      return pickNew(current, rel ? [rel] : [])
+    } finally {
+      clearTimeout(t)
+    }
   },
 }

@@ -1,9 +1,10 @@
 // Testes dos composables (portas FAKE).
 import { beforeEach, describe, expect, it } from 'vitest'
-import { FakeBackend, FakeMedia } from '../ports/fake'
+import { FakeBackend, FakeMedia, FakeUpdates } from '../ports/fake'
 import { setPorts } from '../ports'
 import { useRegion } from './useRegion'
 import { useToolbar } from './useToolbar'
+import { useUpdate } from './useUpdate'
 import { useWebcam } from './useWebcam'
 
 let b: FakeBackend
@@ -18,7 +19,7 @@ beforeEach(() => {
     wins: [{ id: 9, title: 'Notas' }],
   }
   b.dv = { cams: [{ id: 'c1', name: 'Cam' }], mics: [{ id: 'm1', name: 'Mic' }] }
-  setPorts({ backend: b, media: m })
+  setPorts({ backend: b, media: m, updates: new FakeUpdates() })
 })
 
 describe('useToolbar', () => {
@@ -236,5 +237,69 @@ describe('useRegion', () => {
     r.key(new KeyboardEvent('keydown', { key: 'Escape' }))
     await flush()
     expect(r.err.value).toBe('sem janela')
+  })
+})
+
+describe('useUpdate', () => {
+  let u: FakeUpdates
+  beforeEach(() => {
+    u = new FakeUpdates()
+    setPorts({ backend: b, media: m, updates: u })
+  })
+  const logs = () => b.calls.filter((c) => c[0] === 'logUi').map((c) => c[1])
+
+  it('com atualização: guarda dados e registra no log', async () => {
+    u.res = { version: '0.2.0', url: 'https://github.com/klawdyo/kapture/releases/tag/v0.2.0' }
+    const t = useUpdate()
+    await t.init()
+    expect(u.calls).toEqual(['0.1.0'])
+    expect(t.cur.value).toBe('0.1.0')
+    expect(t.has.value).toBe(true)
+    expect(logs()).toEqual([{ lvl: 'info', msg: '[update] atualização disponível v0.2.0' }])
+  })
+  it('sem atualização: nada aparece', async () => {
+    const t = useUpdate()
+    await t.init()
+    expect(t.has.value).toBe(false)
+    expect(logs()).toEqual([{ lvl: 'info', msg: '[update] sem atualização' }])
+  })
+  it('falha de rede: nada aparece e vai ao log como warn', async () => {
+    u.fail = new Error('sem rede')
+    const t = useUpdate()
+    await t.init()
+    expect(t.has.value).toBe(false)
+    expect(logs()).toEqual([{ lvl: 'warn', msg: '[update] falha ao verificar: sem rede' }])
+  })
+  it('falha do próprio log é descartada', async () => {
+    b.fail = 'log quebrado'
+    const t = useUpdate()
+    await t.init() // version() falha: cai no catch, e o log também falha
+    await flush()
+    expect(t.has.value).toBe(false)
+  })
+  it('abrir, fechar (Depois) e baixar', async () => {
+    u.res = { version: '0.2.0', url: 'https://github.com/klawdyo/kapture/releases/tag/v0.2.0' }
+    const t = useUpdate()
+    await t.download() // sem atualização: não faz nada
+    expect(b.calls.some((c) => c[0] === 'openUrl')).toBe(false)
+    await t.init()
+    t.toggle()
+    expect(t.open.value).toBe(true)
+    t.later()
+    expect(t.open.value).toBe(false)
+    expect(t.has.value).toBe(true) // a bolinha continua
+    t.toggle()
+    await t.download()
+    expect(t.open.value).toBe(false)
+    expect(b.calls).toContainEqual(['openUrl', u.res.url])
+  })
+  it('falha ao abrir o release vai ao log', async () => {
+    u.res = { version: '0.2.0', url: 'https://github.com/klawdyo/kapture/releases/tag/v0.2.0' }
+    const t = useUpdate()
+    await t.init()
+    b.fail = 'sem navegador'
+    await t.download()
+    await flush()
+    expect(b.calls.at(-1)).toEqual(['logUi', { lvl: 'warn', msg: '[update] falha ao abrir o release: sem navegador' }])
   })
 })

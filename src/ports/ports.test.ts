@@ -1,5 +1,5 @@
 // Testes das portas: FAKE, REAL (com @tauri-apps/api mockado) e provedor.
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const invoke = vi.fn()
 const handlers: Record<string, (e: { payload: unknown }) => void> = {}
@@ -11,6 +11,7 @@ let resized: (e: { payload: { width: number; height: number } }) => void = () =>
 const setSize = vi.fn(async () => {})
 const minimize = vi.fn(async () => {})
 const close = vi.fn(async () => {})
+vi.mock('@tauri-apps/api/app', () => ({ getVersion: async () => '1.2.3' }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke: (...a: unknown[]) => invoke(...a) }))
 vi.mock('@tauri-apps/api/event', () => ({ listen: (...a: [string, never]) => listen(...a) }))
 vi.mock('@tauri-apps/api/window', () => ({
@@ -23,9 +24,9 @@ vi.mock('@tauri-apps/api/window', () => ({
   }),
 }))
 
-import { FakeBackend, FakeMedia } from './fake'
+import { FakeBackend, FakeMedia, FakeUpdates } from './fake'
 import { ports, setPorts } from './index'
-import { realBackend, realMedia } from './real'
+import { LATEST_URL, realBackend, realMedia, realUpdates, TIMEOUT } from './real'
 
 describe('FakeBackend', () => {
   it('simula comandos e estado', async () => {
@@ -41,6 +42,8 @@ describe('FakeBackend', () => {
     await f.close()
     await f.logUi('warn', 'm')
     await f.openLogs()
+    expect(await f.version()).toBe('0.1.0')
+    await f.openUrl('u')
     await f.start({ mode: 'screen', sys: true, fps: 30 })
     expect((await f.state()).state).toBe('rec')
     await f.pause()
@@ -52,6 +55,7 @@ describe('FakeBackend', () => {
     expect(f.calls).toContainEqual(['fitBar', { w: 720, h: 136 }])
     expect(f.calls).toContainEqual(['logUi', { lvl: 'warn', msg: 'm' }])
     expect(f.calls.map((c) => c[0])).toContain('openLogs')
+    expect(f.calls).toContainEqual(['openUrl', 'u'])
   })
   it('falha quando pedido', async () => {
     const f = new FakeBackend()
@@ -93,11 +97,23 @@ describe('FakeMedia', () => {
   })
 })
 
+describe('FakeUpdates', () => {
+  it('devolve a resposta e pode falhar', async () => {
+    const f = new FakeUpdates()
+    expect(await f.check('0.1.0')).toBeNull()
+    f.res = { version: '0.2.0', url: 'u' }
+    expect(await f.check('0.1.0')).toEqual(f.res)
+    f.fail = new Error('rede')
+    await expect(f.check('0.1.0')).rejects.toThrow('rede')
+    expect(f.calls).toEqual(['0.1.0', '0.1.0', '0.1.0'])
+  })
+})
+
 describe('provedor', () => {
   it('troca as portas', () => {
     const orig = ports()
     expect(orig.backend).toBe(realBackend)
-    const p = { backend: new FakeBackend(), media: new FakeMedia() }
+    const p = { backend: new FakeBackend(), media: new FakeMedia(), updates: new FakeUpdates() }
     setPorts(p)
     expect(ports()).toBe(p)
     setPorts(orig)
@@ -173,6 +189,55 @@ describe('realBackend', () => {
     await realBackend.fitSquare(50)
     expect(got).toEqual([[10, 20]])
     expect(setSize).toHaveBeenCalledWith({ width: 50, height: 50 })
+  })
+})
+
+describe('realBackend: versão e URL', () => {
+  it('lê a versão do app e abre a URL pelo comando open_url', async () => {
+    invoke.mockReset()
+    invoke.mockResolvedValue(undefined)
+    expect(await realBackend.version()).toBe('1.2.3')
+    await realBackend.openUrl('https://github.com/klawdyo/kapture/releases/tag/v1.2.3')
+    expect(invoke).toHaveBeenLastCalledWith('open_url', { url: 'https://github.com/klawdyo/kapture/releases/tag/v1.2.3' })
+  })
+})
+
+describe('realUpdates', () => {
+  const rel = { tag_name: 'v0.2.0', html_url: 'https://github.com/klawdyo/kapture/releases/tag/v0.2.0' }
+  const resp = (ok: boolean, body: unknown, status = 200) =>
+    ({ ok, status, json: async () => body }) as unknown as Response
+  afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers() })
+
+  it('consulta o último release uma vez, sem dados do usuário', async () => {
+    const f = vi.fn().mockResolvedValue(resp(true, rel))
+    vi.stubGlobal('fetch', f)
+    expect(await realUpdates.check('0.1.0')).toEqual({ version: '0.2.0', url: rel.html_url })
+    expect(f).toHaveBeenCalledTimes(1)
+    const [url, init] = f.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe(LATEST_URL)
+    expect(init.headers).toEqual({ Accept: 'application/vnd.github+json' })
+    expect(init.body).toBeUndefined()
+    expect(init.credentials).toBeUndefined()
+  })
+  it('sem versão mais nova ou resposta inválida devolve null', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(resp(true, rel)))
+    expect(await realUpdates.check('0.2.0')).toBeNull()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(resp(true, { tag_name: 'v9.0.0', html_url: 'https://evil.com/' })))
+    expect(await realUpdates.check('0.1.0')).toBeNull()
+  })
+  it('HTTP com erro rejeita', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(resp(false, {}, 403)))
+    await expect(realUpdates.check('0.1.0')).rejects.toThrow('HTTP 403')
+  })
+  it('aborta após o tempo limite', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('fetch', vi.fn((_u: string, init: RequestInit) => new Promise((_res, rej) => {
+      init.signal!.addEventListener('abort', () => rej(new Error('abortado')))
+    })))
+    const p = realUpdates.check('0.1.0')
+    const assertion = expect(p).rejects.toThrow('abortado')
+    await vi.advanceTimersByTimeAsync(TIMEOUT)
+    await assertion
   })
 })
 

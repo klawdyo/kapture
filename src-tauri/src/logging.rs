@@ -1,4 +1,4 @@
-//! Log global do app: arquivo em `%LOCALAPPDATA%\\Cap\\logs\\cap.log`.
+//! Log global do app: arquivo em `%LOCALAPPDATA%\\kapture\\logs\\kapture.log`.
 //!
 //! Os casos de uso recebem a porta `Log` por injeção; os adaptadores de
 //! baixo nível (callbacks do Windows, thread do atalho) e o panic hook
@@ -12,7 +12,7 @@ use std::sync::{Arc, OnceLock};
 
 static LOG: OnceLock<Arc<dyn Log>> = OnceLock::new();
 
-/// Pasta de logs: `%LOCALAPPDATA%\Cap\logs` (ou a pasta temporária).
+/// Pasta de logs: `%LOCALAPPDATA%\kapture\logs` (ou a pasta temporária).
 pub fn dir() -> PathBuf {
     #[cfg(windows)]
     {
@@ -27,7 +27,7 @@ pub fn dir() -> PathBuf {
     // Outros SOs (só desenvolvimento da interface).
     #[cfg(not(windows))]
     {
-        std::env::temp_dir().join("Cap").join("logs")
+        std::env::temp_dir().join("kapture").join("logs")
     }
 }
 

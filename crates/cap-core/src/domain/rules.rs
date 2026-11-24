@@ -17,6 +17,19 @@ pub fn region_ok(r: &Region) -> bool {
     r.w >= MIN_REGION && r.h >= MIN_REGION
 }
 
+/// Prefixo das únicas URLs que o app abre no navegador (páginas de release).
+pub const RELEASE_URL: &str = "https://github.com/klawdyo/kapture/releases/";
+
+/// A URL é uma página de release do kapture, sem caracteres de controle,
+/// espaços, aspas, barras invertidas nem `..`?
+pub fn release_url_ok(url: &str) -> bool {
+    url.starts_with(RELEASE_URL)
+        && !url.contains("..")
+        && !url
+            .chars()
+            .any(|c| c.is_control() || c.is_whitespace() || c == '"' || c == '\\')
+}
+
 /// Valida a configuração de gravação.
 pub fn validate(cfg: &RecCfg) -> Res<()> {
     if !(1..=MAX_FPS).contains(&cfg.fps) {
@@ -40,10 +53,10 @@ pub fn validate(cfg: &RecCfg) -> Res<()> {
     }
 }
 
-/// Nome do arquivo de vídeo: `cap-AAAAMMDD-HHMMSS.mp4`.
+/// Nome do arquivo de vídeo: `kapture-AAAAMMDD-HHMMSS.mp4`.
 pub fn file_name(t: &Stamp) -> String {
     format!(
-        "cap-{:04}{:02}{:02}-{:02}{:02}{:02}.mp4",
+        "kapture-{:04}{:02}{:02}-{:02}{:02}{:02}.mp4",
         t.y, t.mo, t.d, t.h, t.mi, t.s
     )
 }
@@ -95,6 +108,27 @@ pub fn fmt_timer(secs: u64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn so_aceita_url_de_release() {
+        assert!(release_url_ok(
+            "https://github.com/klawdyo/kapture/releases/tag/v1.2.3"
+        ));
+        for ruim in [
+            "",
+            "http://github.com/klawdyo/kapture/releases/tag/v1",
+            "https://github.com/klawdyo/kapture/issues/1",
+            "https://github.com/klawdyo/kapture/releases",
+            "https://github.com/klawdyo/kapture/releases/../../x",
+            "https://github.com/klawdyo/kapture/releases/a b",
+            "https://github.com/klawdyo/kapture/releases/a\"b",
+            "https://github.com/klawdyo/kapture/releases/a\\b",
+            "https://github.com/klawdyo/kapture/releases/a\nb",
+            "https://github.com.evil.com/klawdyo/kapture/releases/",
+        ] {
+            assert!(!release_url_ok(ruim), "{ruim:?}");
+        }
+    }
 
     fn cfg(mode: Mode) -> RecCfg {
         RecCfg {
@@ -182,7 +216,7 @@ mod tests {
             mi: 5,
             s: 1,
         };
-        assert_eq!(file_name(&t), "cap-20260309-070501.mp4");
+        assert_eq!(file_name(&t), "kapture-20260309-070501.mp4");
     }
 
     #[test]

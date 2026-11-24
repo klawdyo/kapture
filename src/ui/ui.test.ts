@@ -6,10 +6,13 @@ import ModeSwitch from '../components/ModeSwitch.vue'
 import RecBtn from '../components/RecBtn.vue'
 import TitleBar from '../components/TitleBar.vue'
 import VuMeter from '../components/VuMeter.vue'
+import UpdateDot from '../components/UpdateDot.vue'
 import Box from './Box.vue'
 import Btn from './Btn.vue'
+import Dot from './Dot.vue'
 import Icon from './Icon.vue'
 import Meter from './Meter.vue'
+import Pop from './Pop.vue'
 import Segmented from './Segmented.vue'
 import Select from './Select.vue'
 import Video from './Video.vue'
@@ -99,5 +102,47 @@ describe('components do domínio', () => {
     await t.find('button[title="Fechar"]').trigger('click')
     expect(t.emitted('min')).toHaveLength(1)
     expect(t.emitted('close')).toHaveLength(1)
+  })
+  it('TitleBar mostra o slot "end" antes dos botões', () => {
+    const t = mount(TitleBar, { slots: { end: '<i class="x" />' } })
+    expect(t.find('.x').exists()).toBe(true)
+  })
+  it('UpdateDot: bolinha, mensagem e eventos', async () => {
+    const props = { upd: { version: '0.2.0', url: 'u' }, cur: '0.1.0', open: false }
+    const c = mount(UpdateDot, { props })
+    expect(c.find('[role="dialog"]').exists()).toBe(false)
+    await c.find('button[aria-label="Atualização disponível"]').trigger('click')
+    expect(c.emitted('toggle')).toHaveLength(1)
+    const o = mount(UpdateDot, { props: { ...props, open: true } })
+    expect(o.text()).toContain('Instalada: v0.1.0')
+    expect(o.text()).toContain('Nova: v0.2.0')
+    const bs = o.findAll('.act button')
+    expect(bs.map((x) => x.text())).toEqual(['Baixar', 'Depois'])
+    await bs[0].trigger('click')
+    await bs[1].trigger('click')
+    await o.find('[role="dialog"]').trigger('keydown', { key: 'Escape' })
+    expect(o.emitted('download')).toHaveLength(1)
+    expect(o.emitted('later')).toHaveLength(2)
+  })
+})
+
+describe('ui: Dot e Pop', () => {
+  it('Dot: rótulo acessível, piscar opcional e tamanho', () => {
+    const a = mount(Dot, { props: { label: 'Aviso' } })
+    expect(a.attributes('aria-label')).toBe('Aviso')
+    expect(a.attributes('aria-expanded')).toBe('false')
+    expect(a.classes()).not.toContain('blink')
+    const b = mount(Dot, { props: { label: 'Aviso', blink: true, expanded: true, size: 12 } })
+    expect(b.classes()).toContain('blink')
+    expect(b.attributes('aria-expanded')).toBe('true')
+    expect(b.attributes('style')).toContain('12px')
+  })
+  it('Pop: diálogo com rótulo, slot e Esc', async () => {
+    const p = mount(Pop, { props: { label: 'Msg' }, slots: { default: 'oi' } })
+    expect(p.attributes('role')).toBe('dialog')
+    expect(p.attributes('aria-label')).toBe('Msg')
+    expect(p.text()).toBe('oi')
+    await p.trigger('keydown', { key: 'Escape' })
+    expect(p.emitted('close')).toHaveLength(1)
   })
 })

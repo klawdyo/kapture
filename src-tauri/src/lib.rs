@@ -1,4 +1,4 @@
-//! Cap: raiz de composição. Monta as portas reais, injeta nos casos de
+//! kapture: raiz de composição. Monta as portas reais, injeta nos casos de
 //! uso do `cap-core` e registra os comandos Tauri.
 
 mod adapters;
@@ -6,9 +6,9 @@ mod commands;
 mod logging;
 
 use adapters::{TauriCam, TauriEvents, TauriPicker};
-use cap_core::app::{CamCtl, Lister, LoggedEnc, MicMeter, Recorder, RegionPick};
+use cap_core::app::{CamCtl, Lister, LoggedEnc, MicMeter, Recorder, RegionPick, UrlOpen};
 use cap_core::media::PickChan;
-use cap_core::ports::{Capture, Clock, Devs, Encoder, Fs, Log, Targets};
+use cap_core::ports::{Capture, Clock, Devs, Encoder, Fs, Log, Opener, Targets};
 use commands::Core;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
@@ -27,6 +27,7 @@ struct Plat {
     enc: Arc<dyn Encoder>,
     clock: Arc<dyn Clock>,
     fs: Arc<dyn Fs>,
+    opener: Arc<dyn Opener>,
 }
 
 /// Windows: adaptadores reais.
@@ -40,6 +41,7 @@ fn plat() -> Plat {
         enc: Arc::new(MfEncoder::new()),
         clock: Arc::new(WinClock::new()),
         fs: Arc::new(WinFs),
+        opener: Arc::new(WinOpener),
     }
 }
 
@@ -54,6 +56,7 @@ fn plat() -> Plat {
         enc: Arc::new(FakeEncoder::default()),
         clock: Arc::new(FakeClock::default()),
         fs: Arc::new(FakeFs::default()),
+        opener: Arc::new(FakeOpener::default()),
     }
 }
 
@@ -80,6 +83,7 @@ fn wire(app: AppHandle) -> Arc<Core> {
         cam: CamCtl::new(cam, log.clone()),
         pick: RegionPick::new(picker, log.clone()),
         meter: MicMeter::new(p.cap, events, log.clone()),
+        url: UrlOpen::new(p.opener, log.clone()),
         chan,
         log,
     })
@@ -164,9 +168,10 @@ pub fn run() {
             commands::mic_stop,
             commands::log_ui,
             commands::open_logs,
+            commands::open_url,
             commands::fit_toolbar,
         ])
         .run(tauri::generate_context!())
-        .expect("falha ao iniciar o Cap");
-    logging::get().info("Cap encerrado normalmente");
+        .expect("falha ao iniciar o kapture");
+    logging::get().info("kapture encerrado normalmente");
 }
