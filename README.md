@@ -66,6 +66,10 @@ Fluxo: o desenvolvimento acontece na `dev`; a `main` só recebe releases (merge 
 
 A arquitetura está em [docs/CONTRACT.md](docs/CONTRACT.md) e o empacotamento em [docs/BUILD.md](docs/BUILD.md).
 
+## Privacidade
+
+O kapture não coleta telemetria nem envia dados do usuário. Leia a política completa em [PRIVACY.md](PRIVACY.md).
+
 ## Licença
 
 Veja [LICENSE](LICENSE).
