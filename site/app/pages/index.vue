@@ -23,19 +23,19 @@ const features = [
   },
   {
     title: 'Leve de verdade',
-    detail: 'Instalador com menos de 2 MB, abre rápido e não pesa enquanto você grava.'
+    detail: 'Executável com menos de 2 MB, abre rápido e não pesa enquanto você grava.'
   }
 ]
 
 // Passos objetivos para baixar e usar.
 const installSteps = [
   {
-    title: 'Baixe o instalador',
-    body: 'Faça o download do kapture-win-Setup.exe.'
+    title: 'Baixe o kapture.exe',
+    body: 'Faça o download do arquivo único, sem instalação.'
   },
   {
-    title: 'Instale em um clique',
-    body: 'A instalação roda só para o seu usuário, sem pedir administrador.'
+    title: 'Execute o arquivo',
+    body: 'Sem instalação, é só baixar e executar. Não pede administrador.'
   },
   {
     title: 'Comece a gravar',
@@ -66,7 +66,7 @@ const installSteps = [
                 class="focus-ring inline-flex items-center gap-2.5 rounded-xl bg-[#14181f] px-6 py-3.5 text-base font-semibold text-[#f6f7f9] shadow-md shadow-black/15 transition-colors hover:bg-[#232a35] dark:bg-[#f2f4f8] dark:text-[#15181e] dark:hover:bg-[#dde2eb]"
               >
                 <UIcon name="i-lucide-download" class="size-5" aria-hidden="true" />
-                <span>Baixar instalador</span>
+                <span>Baixar o kapture.exe</span>
               </a>
 
               <a
@@ -137,7 +137,7 @@ const installSteps = [
     <section id="instalar" class="brand-grid border-t border-[var(--line-hairline)]">
       <div class="mx-auto max-w-5xl px-5 py-16 sm:px-8 lg:py-24">
         <h2 class="font-display text-2xl font-bold tracking-[-0.02em] text-[var(--ink-primary)] sm:text-3xl">
-          Instalação
+          Download
         </h2>
         <p class="mt-2 text-base text-[var(--ink-secondary)]">
           Windows 10 ou 11, 64 bits.
@@ -164,13 +164,13 @@ const installSteps = [
             class="focus-ring inline-flex items-center gap-2.5 rounded-xl bg-[#14181f] px-6 py-3.5 text-base font-semibold text-[#f6f7f9] shadow-md shadow-black/15 transition-colors hover:bg-[#232a35] dark:bg-[#f2f4f8] dark:text-[#15181e] dark:hover:bg-[#dde2eb]"
           >
             <UIcon name="i-lucide-download" class="size-5" aria-hidden="true" />
-            <span>Baixar instalador</span>
+            <span>Baixar o kapture.exe</span>
           </a>
         </div>
 
         <p class="mt-6 max-w-[62ch] text-xs leading-relaxed text-[var(--ink-muted)]">
           <strong class="font-semibold text-[var(--ink-secondary)]">Aviso do SmartScreen:</strong>
-          como o instalador ainda não é assinado digitalmente, o Windows pode mostrar “O Windows protegeu o seu computador”. Clique em <em>Mais informações</em> e depois em <em>Executar assim mesmo</em>.
+          como o kapture.exe ainda não é assinado digitalmente, o Windows pode mostrar “O Windows protegeu o seu computador”. Clique em <em>Mais informações</em> e depois em <em>Executar assim mesmo</em>.
         </p>
       </div>
     </section>

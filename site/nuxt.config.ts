@@ -46,8 +46,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       // NUXT_PUBLIC_DOWNLOAD_URL: o repositório é público, então o padrão abaixo
-      // leva ao último release. Pode apontar para outra URL do .msi se quiser.
-      downloadUrl: 'https://github.com/klawdyo/kapture/releases/latest',
+      // baixa direto o kapture.exe do último release. Pode apontar para outra URL se quiser.
+      downloadUrl: 'https://github.com/klawdyo/kapture/releases/latest/download/kapture.exe',
       // NUXT_PUBLIC_SITE_URL (opcional): URL pública do site, usada nas tags og:*.
       siteUrl: '',
       repoUrl: 'https://github.com/klawdyo/kapture'

@@ -5,7 +5,7 @@ const menuOpen = ref(false)
 
 const navItems = [
   { label: 'Recursos', href: '/#recursos' },
-  { label: 'Instalação', href: '/#instalar' }
+  { label: 'Download', href: '/#instalar' }
 ]
 </script>
 
@@ -40,7 +40,7 @@ const navItems = [
           class="focus-ring hidden items-center gap-2 rounded-lg bg-[#14181f] px-4 py-2 text-sm font-semibold text-[#f6f7f9] transition-colors hover:bg-[#262d38] dark:bg-[#f2f4f8] dark:text-[#15181e] dark:hover:bg-[#dce1ea] sm:inline-flex"
         >
           <UIcon name="i-lucide-download" class="size-4" aria-hidden="true" />
-          <span>Baixar instalador</span>
+          <span>Baixar o kapture.exe</span>
         </a>
 
         <!-- Botão de menu móvel. -->
@@ -75,7 +75,7 @@ const navItems = [
           @click="menuOpen = false"
         >
           <UIcon name="i-lucide-download" class="size-4" aria-hidden="true" />
-          <span>Baixar instalador</span>
+          <span>Baixar o kapture.exe</span>
         </a>
       </nav>
     </div>

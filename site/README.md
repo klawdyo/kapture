@@ -11,11 +11,11 @@ Para mudar o valor, é preciso gerar o site de novo.
 
 | Variável | Padrão | Uso |
 | --- | --- | --- |
-| `NUXT_PUBLIC_DOWNLOAD_URL` | `https://github.com/klawdyo/kapture/releases/latest` | Destino dos botões "Baixar MSI" |
+| `NUXT_PUBLIC_DOWNLOAD_URL` | `https://github.com/klawdyo/kapture/releases/latest/download/kapture.exe` | Destino dos botões "Baixar o kapture.exe" |
 | `NUXT_PUBLIC_SITE_URL` | vazio | URL pública do site, usada em `og:url` e `og:image` |
 
-O repositório `klawdyo/kapture` é **público**, então o link padrão leva direto ao último
-release, onde qualquer pessoa pode baixar o `.msi`.
+O repositório `klawdyo/kapture` é **público**, então o link padrão baixa direto o `kapture.exe`
+do último release.
 
 ## GitHub Pages
 
@@ -46,7 +46,7 @@ Requer Node 22.
 ```bash
 cd site
 docker build -t kapture-site \
-  --build-arg NUXT_PUBLIC_DOWNLOAD_URL=https://exemplo.com/downloads/kapture.msi \
+  --build-arg NUXT_PUBLIC_DOWNLOAD_URL=https://exemplo.com/downloads/kapture.exe \
   --build-arg NUXT_PUBLIC_SITE_URL=https://kapture.exemplo.com .
 docker run -d --name kapture-site -p 8080:80 --restart unless-stopped kapture-site
 curl -I http://localhost:8080/
