@@ -81,17 +81,18 @@ pub fn submit_region(st: St<'_>, region: Option<Region>) {
 }
 
 #[tauri::command]
-pub async fn start_rec(st: St<'_>, mut cfg: RecCfg) -> Result<(), String> {
+pub async fn start_rec(st: St<'_>, mut cfg: RecCfg) -> Result<String, String> {
     // Microfone vazio significa "sem microfone".
     cfg.mic_id = cfg.mic_id.filter(|m| !m.is_empty());
     blk(st, "start_rec", move |c| {
-        c.rec.start(&cfg)?;
+        let warns = c.rec.start(&cfg)?;
         // O VU meter é só visual: se falhar, a gravação segue. Se já mede
         // este microfone (ligado pela barra), `start` reaproveita sem erro.
         if let Some(m) = &cfg.mic_id {
             let _ = c.meter.start(m);
         }
-        Ok(())
+        // Avisos (ex.: áudio dispensado) seguem juntos para a interface; vazio = tudo certo.
+        Ok(warns.join(" "))
     })
     .await
 }

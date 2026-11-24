@@ -14,7 +14,8 @@ export interface Backend {
   toggleCam(visible: boolean, devId?: string): Promise<void>
   pickRegion(): Promise<Region | null>
   submitRegion(region: Region | null): Promise<void>
-  start(cfg: RecCfg): Promise<void>
+  /** Inicia a gravação; devolve um aviso em português (ex.: áudio dispensado) ou '' se tudo certo. */
+  start(cfg: RecCfg): Promise<string>
   pause(): Promise<void>
   resume(): Promise<void>
   stop(): Promise<string>

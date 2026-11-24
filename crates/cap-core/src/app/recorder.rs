@@ -84,8 +84,9 @@ impl Recorder {
         self.events.rec_state(&self.snapshot(i));
     }
 
-    /// Inicia a gravação (somente a partir de ocioso).
-    pub fn start(&self, cfg: &RecCfg) -> Res<()> {
+    /// Inicia a gravação (somente a partir de ocioso). Devolve os avisos da
+    /// captura (ex.: um áudio que não abriu): a gravação segue sem ele.
+    pub fn start(&self, cfg: &RecCfg) -> Res<Vec<String>> {
         let mut i = lk(&self.inner);
         if i.st != St::Idle {
             return Err("Já existe uma gravação em andamento.".into());
@@ -100,15 +101,21 @@ impl Recorder {
         self.fs.ensure_dir(&dir)?;
         let path = self.fs.join(&dir, &file_name(&self.clock.now()));
         self.enc.open(&path, cfg)?;
-        if let Err(e) = self.cap.start(cfg, self.enc.clone()) {
-            // Fecha o arquivo aberto; o erro original é o que importa.
-            let r = self.enc.finish();
-            self.log.error(&format!("captura: falha ao iniciar: {e}"));
-            if let Err(e2) = r {
-                self.log
-                    .warn(&format!("encoder: falha ao fechar o arquivo: {e2}"));
+        let warns = match self.cap.start(cfg, self.enc.clone()) {
+            Ok(w) => w,
+            Err(e) => {
+                // Fecha o arquivo aberto; o erro original é o que importa.
+                let r = self.enc.finish();
+                self.log.error(&format!("captura: falha ao iniciar: {e}"));
+                if let Err(e2) = r {
+                    self.log
+                        .warn(&format!("encoder: falha ao fechar o arquivo: {e2}"));
+                }
+                return Err(e);
             }
-            return Err(e);
+        };
+        for w in &warns {
+            self.log.warn(&format!("captura: aviso ao usuário: {w}"));
         }
         *i = Inner {
             st: St::Rec,
@@ -118,7 +125,7 @@ impl Recorder {
         };
         self.emit(&i);
         self.log.info(&format!("gravação: iniciada em {}", i.path));
-        Ok(())
+        Ok(warns)
     }
 
     /// Pausa a gravação em andamento.
@@ -376,6 +383,15 @@ mod tests {
             m[4],
             "gravação: finalizada (2 s) em /videos/kapture-20260102-030405.mp4"
         );
+    }
+
+    #[test]
+    fn avisos_da_captura_sobem_e_vao_ao_log() {
+        let k = kit();
+        *lk(&k.cap.warns) = vec!["sem microfone".to_string()];
+        assert_eq!(k.rec.start(&cfg()).unwrap(), vec!["sem microfone"]);
+        assert!(k.log.has("captura: aviso ao usuário: sem microfone"));
+        assert_eq!(k.rec.state().state, St::Rec);
     }
 
     #[test]

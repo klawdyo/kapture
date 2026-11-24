@@ -103,6 +103,13 @@ describe('useToolbar', () => {
     await t.start()
     expect((b.calls.find((c) => c[0] === 'start')![1] as { region: unknown }).region).toEqual(b.region)
   })
+  it('aviso do backend (áudio dispensado) aparece na barra sem parar a gravação', async () => {
+    const t = useToolbar()
+    b.warn = 'Não foi possível usar o microfone; a gravação segue sem ele.'
+    await t.start()
+    expect(t.rec.value.state).toBe('rec')
+    expect(t.err.value).toBe(b.warn)
+  })
   it('atalho alterna gravação', async () => {
     const t = useToolbar()
     await t.init()

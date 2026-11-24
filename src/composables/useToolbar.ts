@@ -69,10 +69,12 @@ export function useToolbar() {
         region = r
       }
       saved.value = ''
-      await b.start(
+      const warn = await b.start(
         buildCfg({ mode: mode.value, tid: tid.value, mic: mic.value, sys: sys.value, fps: Number(fps.value), region }),
       )
       await refresh()
+      // A gravação começou, mas parte dela (ex.: o áudio) foi dispensada: avisa na barra.
+      if (warn) err.value = warn
     })
   }
 

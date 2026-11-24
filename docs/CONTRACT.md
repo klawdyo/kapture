@@ -36,7 +36,7 @@ packaging/msix/             # AppxManifest + script MakeAppx
 | toggle_cam | `{visible:boolean, devId?:string}` | void |
 | pick_region | - | Region \| null (abre janela `region-selector`) |
 | submit_region | `{region: Region \| null}` | void (chamado pelo seletor) |
-| start_rec | `{cfg: RecCfg}` | void |
+| start_rec | `{cfg: RecCfg}` | string (aviso em português, vazio se tudo certo; ex.: "Não foi possível usar o microfone; a gravação segue sem ele.": a fonte de áudio que não abriu é dispensada e o vídeo continua; a interface mostra o aviso na barra) |
 | pause_rec / resume_rec | - | void |
 | stop_rec | - | string (caminho do MP4) |
 | get_state | - | RecState |
@@ -49,6 +49,13 @@ packaging/msix/             # AppxManifest + script MakeAppx
 | update_apply | - | void (só com o estado `ready`; encerra o app, aplica a versão baixada e reabre; sem versão pronta devolve "Nenhuma atualização pronta para aplicar.") |
 | fit_toolbar | w,h (px lógicos) | void (redimensiona a janela `toolbar` mantendo centro e base; `Backend.fitBar`) |
 Erros: string em português.
+
+Áudio (WASAPI, `adapters/win/capture/audio.rs`): cada fonte (microfone e som do sistema por loopback) é aberta em modo
+compartilhado no formato NATIVO do dispositivo (`GetMixFormat`; o loopback só leva `AUDCLNT_STREAMFLAGS_LOOPBACK`, o
+microfone nenhuma flag: `AUTOCONVERTPCM` com `LOOPBACK` dava `E_INVALIDARG`). A conversão para i16 estéreo 48 kHz é feita
+em software por `cap_core::media::Conv` (PCM 16/24/32 e float 32, qualquer número de canais e taxa, reamostragem linear,
+saturação). Uma fonte que falha ao abrir não derruba a gravação: o erro (etapa, nome do dispositivo, formato e HRESULT em
+hexadecimal) vai ao log e `Capture::start` devolve um aviso para o usuário.
 
 Regras do VU meter (`MicMeter`, testadas em cap-core): no máximo um medidor ativo.
 `mic_start` com o mesmo microfone já medido é no-op; com outro, reinicia sem erro.

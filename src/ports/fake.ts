@@ -54,7 +54,9 @@ export class FakeBackend implements Backend {
   async toggleCam(visible: boolean, devId?: string) { await this.c('toggleCam', { visible, devId }) }
   async pickRegion() { await this.c('pickRegion'); return this.region }
   async submitRegion(region: Region | null) { await this.c('submitRegion', region) }
-  async start(cfg: RecCfg) { await this.c('start', cfg); this.st = { state: 'rec', secs: 0 } }
+  /** Aviso que `start` devolve (simula uma fonte de áudio dispensada). */
+  warn = ''
+  async start(cfg: RecCfg) { await this.c('start', cfg); this.st = { state: 'rec', secs: 0 }; return this.warn }
   async pause() { await this.c('pause'); this.st = { state: 'paused', secs: this.st.secs } }
   async resume() { await this.c('resume'); this.st = { state: 'rec', secs: this.st.secs } }
   async stop() { await this.c('stop'); this.st = { state: 'idle', secs: 0 }; return this.path }
