@@ -25,13 +25,6 @@ tauri = { version = "2", default-features = false, features = ["wry"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-# Windows: Velopack (instalador por usuário e atualização). O hook `VelopackApp::run()` precisa
-# ser a primeira chamada do main. A versão deste crate e a do `vpk` (CLI) têm de ser IGUAIS
-# (docs/BUILD.md; o scripts/pack-velopack.ps1 lê esta versão do Cargo.lock).
-[target.'cfg(windows)'.dependencies.velopack]
-version = "1.2.161"
-default-features = false
-
 # Windows: somente as features realmente usadas pelos adaptadores.
 # O atalho global usa RegisterHotKey (user32) em vez de um plugin extra.
 [target.'cfg(windows)'.dependencies.windows]

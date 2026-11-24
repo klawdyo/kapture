@@ -11,7 +11,6 @@ pub mod hotkey;
 mod opener;
 mod sys;
 mod targets;
-mod updater;
 mod worker;
 
 pub use capture::WinCapture;
@@ -24,4 +23,3 @@ pub use fs::{local_app_data, WinFs};
 pub use opener::WinOpener;
 pub use sys::{alert, os_version};
 pub use targets::WinTargets;
-pub use updater::VpkUpdater;

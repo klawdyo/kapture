@@ -79,7 +79,7 @@ pub trait Events: Send + Sync {
     fn update_state(&self, st: &UpdState);
 }
 
-/// Atualização automática do app (hoje Velopack; trocável por outro adaptador).
+/// Atualização automática do app (hoje sem implementação real, só o `NoUpdater`; trocável por outro adaptador).
 pub trait Updater: Send + Sync {
     /// O app foi instalado de um jeito que permite atualizar sozinho?
     fn supported(&self) -> bool;

@@ -5,7 +5,7 @@ mod adapters;
 mod commands;
 mod logging;
 
-use adapters::{TauriCam, TauriEvents, TauriPicker};
+use adapters::{NoUpdater, TauriCam, TauriEvents, TauriPicker};
 use cap_core::app::{CamCtl, Lister, LoggedEnc, MicMeter, Recorder, RegionPick, Update, UrlOpen};
 use cap_core::media::PickChan;
 use cap_core::ports::{Capture, Clock, Devs, Encoder, Fs, Log, Opener, Targets, Updater};
@@ -43,7 +43,8 @@ fn plat() -> Plat {
         clock: Arc::new(WinClock::new()),
         fs: Arc::new(WinFs),
         opener: Arc::new(WinOpener),
-        updater: Arc::new(VpkUpdater::new()),
+        // Exe solto: sem atualização automática (aviso + página do release).
+        updater: Arc::new(NoUpdater),
     }
 }
 
@@ -59,11 +60,8 @@ fn plat() -> Plat {
         clock: Arc::new(FakeClock::default()),
         fs: Arc::new(FakeFs::default()),
         opener: Arc::new(FakeOpener::default()),
-        // Sem instalador: a interface cai no aviso simples (consulta ao GitHub).
-        updater: Arc::new(FakeUpdater {
-            supported: Mutex::new(false),
-            ..Default::default()
-        }),
+        // Exe solto: sem atualização automática (aviso + página do release).
+        updater: Arc::new(NoUpdater),
     }
 }
 
