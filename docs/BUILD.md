@@ -52,6 +52,11 @@ O release é automático: o push na `main` (merge da `dev`) executa o `release.y
 
 ## CI e site
 
-O `ci.yml` roda em pull request (para `main` ou `dev`) e em push na `dev`. Branches de feature não disparam nada por push: só o PR. O push na `main` não roda o CI por conta própria, porque o `release.yml` o chama antes de publicar. O job `msi` (build de verificação do instalador) roda apenas em PR, já que o release gera o seu próprio MSI. O job `site` confirma que o `npm run generate` do Nuxt funciona.
+O `ci.yml` roda só em pull request (para `main` ou `dev`) e quando o `release.yml` o chama. Não há CI por push: o PR já roda os testes e o push na `main` fica por conta do release.
+
+- **PR para `dev`:** só o job Linux (fmt, clippy, cobertura de 100%, vitest) e o job `site` (confirma o `npm run generate` do Nuxt). É o caminho rápido.
+- **PR para `main`:** os mesmos jobs mais o job Windows (`cargo test --workspace` e `cargo check` do Tauri).
+- **Release (`release.yml`):** a suíte completa (Linux, Windows e site) e a geração do MSI.
+- **Desligado, mas mantido comentado em `ci.yml`:** o push na `dev` e o job `msi` (build de verificação do instalador, que o release já faz). Para voltar a usá-los, basta descomentar os blocos.
 
 O site (`site/`) é publicado pelo `pages.yml` em https://klawdyo.github.io/kapture/ quando a `main` recebe mudanças em `site/` (ou manualmente). O build usa `NUXT_APP_BASE_URL=/kapture/`. Em Settings > Pages do repositório, a fonte deve ser **GitHub Actions**.
