@@ -9,13 +9,15 @@
     "preview": "vite preview",
     "test": "vitest run --coverage",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json && vue-tsc --noEmit -p tsconfig.node.json",
-    "lint": "npm run typecheck"
+    "lint": "npm run typecheck",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
     "vue": "^3.5.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.12.6",
     "@vitejs/plugin-vue": "^5.2.0",
     "@vitest/coverage-v8": "^2.1.0",
     "@vue/test-utils": "^2.4.6",
