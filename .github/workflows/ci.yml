@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
   workflow_call:
 
@@ -64,10 +64,27 @@ jobs:
       - name: Check do src-tauri
         run: cargo check --manifest-path src-tauri/Cargo.toml
 
+  # Garante que o site (Nuxt) gera o estático sem erros
+  site:
+    name: Site (Nuxt generate)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+      - run: npm run generate
+
   # Gera o MSI de verdade para validar a build e medir o tamanho (não roda no release, que já gera o seu)
   msi:
     name: MSI (build de verificação)
-    if: github.event_name != 'workflow_call'
+    if: github.event_name == 'pull_request'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
