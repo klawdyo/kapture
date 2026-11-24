@@ -7,7 +7,8 @@ Gravador de tela leve para Windows (Tauri v2 + Vue 3 + Rust). Leia isto antes de
 1. **Visual atual:** `docs/design/` (README e prints). O PDF `docs/especificacao.pdf` e `docs/ui-reference.png` são **históricos**: não os use como modelo de interface.
 2. **Contrato entre frontend e backend:** `docs/CONTRACT.md` (comandos, eventos, tamanhos de janela).
 3. **Build, CI, release, atualização:** `docs/BUILD.md`. **Versionamento:** `docs/versioning.md`.
-4. Em conflito, vale o que está em `docs/design/` e em `CLAUDE.md` sobre o PDF.
+4. **Memória de problemas:** `docs/specs/MEMORY.md` (o que já deu errado, a causa e o teste que impede a volta). Leia antes de mexer em COM, janelas, áudio, log, CI ou release.
+5. Em conflito, vale o que está em `docs/design/` e em `CLAUDE.md` sobre o PDF.
 
 ## Decisões do dono que não se desfazem sem ordem expressa
 
@@ -27,6 +28,7 @@ Gravador de tela leve para Windows (Tauri v2 + Vue 3 + Rust). Leia isto antes de
 - Vue: nenhum componente com lógica de negócio. Cada tela tem seu composable com seus dados. Widgets **genéricos** e centralizados em `src/ui/`; os especializados do domínio ficam em `src/components/` e compõem os genéricos. Nenhuma tela usa elemento cru fora de `src/ui/`.
 - Cobertura: `cap-core` com 100% das linhas (`cargo llvm-cov -p cap-core --fail-under-lines 100`; apague `target/llvm-cov-target` antes de medir, e use o Rust stable atual, que é o do CI) e frontend com 100% (`npx vitest run --coverage`).
 - Sem travessões como aposto nos textos: use vírgulas ou dois-pontos.
+- Todo problema novo é registrado em `docs/specs/MEMORY.md` no mesmo commit da correção, com teste automatizado (guards em `crates/cap-core/tests/guards.rs`).
 
 ## Fluxo de trabalho e CI (o dono não quer gastar Actions à toa)
 

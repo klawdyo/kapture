@@ -60,7 +60,7 @@ npx vitest run         # testes do front-end
 
 Fluxo: o desenvolvimento acontece na `dev`; a `main` só recebe releases (merge da `dev`), que criam a tag e o GitHub Release automaticamente. Os commits seguem Conventional Commits e a versão é calculada a partir deles. Veja [CONTRIBUTING.md](CONTRIBUTING.md) e [docs/versioning.md](docs/versioning.md).
 
-A arquitetura está em [docs/CONTRACT.md](docs/CONTRACT.md) e o empacotamento em [docs/BUILD.md](docs/BUILD.md).
+A arquitetura está em [docs/CONTRACT.md](docs/CONTRACT.md) e o empacotamento em [docs/BUILD.md](docs/BUILD.md). Os problemas já resolvidos e os testes que os impedem de voltar estão em [docs/specs/MEMORY.md](docs/specs/MEMORY.md).
 
 ## Privacidade
 
