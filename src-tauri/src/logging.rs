@@ -17,7 +17,8 @@ pub fn dir() -> PathBuf {
     #[cfg(windows)]
     {
         use crate::adapters::win::local_app_data;
-        let base = local_app_data().or_else(|| std::env::var("LOCALAPPDATA").ok());
+        // Sem COM na partida: a variável de ambiente vem primeiro; o shell (COM) só como reserva.
+        let base = std::env::var("LOCALAPPDATA").ok().or_else(local_app_data);
         let tmp = std::env::temp_dir();
         PathBuf::from(cap_core::log::logs_dir(
             base.as_deref(),
