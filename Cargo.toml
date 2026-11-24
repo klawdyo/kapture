@@ -1,4 +1,4 @@
-# Workspace do Cap: núcleo em Rust puro + adaptadores Tauri/Windows
+# Workspace do kapture: núcleo em Rust puro + adaptadores Tauri/Windows
 [workspace]
 resolver = "2"
 members = ["crates/cap-core","src-tauri"]

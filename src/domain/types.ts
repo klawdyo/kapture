@@ -30,3 +30,5 @@ export type RecKind = 'idle' | 'rec' | 'paused'
 export interface RecState { state: RecKind; secs: number }
 /** Opção genérica de lista (valor + rótulo). */
 export interface Opt { value: string; label: string }
+/** Atualização disponível: versão nova (sem 'v') e página do release. */
+export interface Upd { version: string; url: string }

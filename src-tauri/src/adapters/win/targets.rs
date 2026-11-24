@@ -88,7 +88,7 @@ fn listable(h: HWND, me: u32) -> bool {
         if cloaked != 0 || GetWindowTextLengthW(h) == 0 {
             return false;
         }
-        // Não oferece as janelas do próprio Cap.
+        // Não oferece as janelas do próprio kapture.
         let mut pid = 0u32;
         GetWindowThreadProcessId(h, Some(&mut pid));
         pid != me

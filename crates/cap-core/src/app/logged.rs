@@ -236,6 +236,8 @@ mod tests {
             assert!(k.enc.write_video(&frame()).is_err());
         }
         assert!(k.enc.write_audio(&[0; 2], 0).is_err());
+        // A 2ª falha de áudio não é registrada (só a 1ª e a cada ERR_EVERY).
+        assert!(k.enc.write_audio(&[0; 2], 0).is_err());
         let erros: Vec<String> = k
             .log
             .msgs()

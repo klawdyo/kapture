@@ -1,7 +1,7 @@
 // Implementação FAKE das portas, para testes (sem Tauri nem câmera).
 import { pickCam, type VideoDev } from '../domain/cam'
-import type { Devices, RecCfg, RecState, Region, Targets } from '../domain/types'
-import type { Backend, LogLvl, Media, Off } from './types'
+import type { Devices, RecCfg, RecState, Region, Targets, Upd } from '../domain/types'
+import type { Backend, LogLvl, Media, Off, Updates } from './types'
 
 /** Assinaturas de evento suportadas. */
 interface Ev {
@@ -20,6 +20,8 @@ export class FakeBackend implements Backend {
   dv: Devices = { cams: [], mics: [] }
   region: Region | null = null
   path = 'C:\\Videos\\kapture.mp4'
+  /** Versão instalada simulada. */
+  ver = '0.1.0'
   st: RecState = { state: 'idle', secs: 0 }
   private ls: { [K in keyof Ev]: Set<Ev[K]> } = {
     mic: new Set(), state: new Set(), hotkey: new Set(), resize: new Set(),
@@ -60,6 +62,8 @@ export class FakeBackend implements Backend {
   async micStop() { await this.c('micStop') }
   async logUi(lvl: LogLvl, msg: string) { await this.c('logUi', { lvl, msg }) }
   async openLogs() { await this.c('openLogs') }
+  async version() { await this.c('version'); return this.ver }
+  async openUrl(url: string) { await this.c('openUrl', url) }
   async minimize() { await this.c('minimize') }
   async close() { await this.c('close') }
   async fitBar(w: number, h: number) { await this.c('fitBar', { w, h }) }
@@ -87,5 +91,20 @@ export class FakeMedia implements Media {
     if (this.fail) throw new Error('sem câmera')
     this.ids.push(pickCam(this.cams, devName))
     return { getTracks: () => [{ stop: () => { this.stopped++ } }] } as unknown as MediaStream
+  }
+}
+
+export class FakeUpdates implements Updates {
+  /** Resposta simulada de `check`. */
+  res: Upd | null = null
+  /** Versões atuais recebidas. */
+  calls: string[] = []
+  /** Se definido, `check` rejeita com este erro. */
+  fail: unknown = null
+
+  async check(current: string): Promise<Upd | null> {
+    this.calls.push(current)
+    if (this.fail !== null) throw this.fail
+    return this.res
   }
 }

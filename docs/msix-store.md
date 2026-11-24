@@ -1,4 +1,4 @@
-# Publicar o Cap na Microsoft Store (MSIX)
+# Publicar o kapture na Microsoft Store (MSIX)
 
 Este guia cobre o cadastro no Partner Center, de onde vem cada valor do manifesto e o que é público ou sensível. Os nomes de campos do Partner Center podem mudar de lugar na interface; o que não pude verificar daqui está marcado como "conferir".
 
@@ -11,7 +11,7 @@ Para religar: descomente, no job de build, os passos "Gerar exe para o MSIX" e "
 ## 1. Passo a passo no Partner Center
 
 1. Crie a conta de desenvolvedor em partner.microsoft.com (tipo Individual ou Empresa; há taxa única de registro, valor a conferir na página de inscrição).
-2. Em **Apps e jogos**, escolha **Novo produto** > **App MSIX ou PWA** e reserve o nome do app ("Cap", se estiver livre). A reserva vale por tempo limitado se você não enviar um pacote (conferir o prazo exibido).
+2. Em **Apps e jogos**, escolha **Novo produto** > **App MSIX ou PWA** e reserve o nome do app ("kapture", se estiver livre). A reserva vale por tempo limitado se você não enviar um pacote (conferir o prazo exibido).
 3. Abra o produto e vá em **Gerenciamento de produto** > **Identidade do produto** (em inglês, *Product identity*; em versões antigas, *App identity*). Ali ficam os valores do manifesto (seção 2).
 4. Ajuste o manifesto `packaging/msix/AppxManifest.xml` via variáveis (seção 4) e gere o pacote com `build-msix.ps1`.
 5. Crie uma **Submissão**: preços e disponibilidade, propriedades (categoria, classificação etária), listagem (descrição, capturas de tela, ícone) e **Pacotes** (envie o `.msix` não assinado).
@@ -22,7 +22,7 @@ Para religar: descomente, no job de build, os passos "Gerar exe para o MSIX" e "
 
 | Valor no manifesto | Onde pegar no Partner Center |
 |---|---|
-| `Identity/@Name` | Identidade do produto > **Package/Identity/Name** (algo como `12345Fulano.Cap`) |
+| `Identity/@Name` | Identidade do produto > **Package/Identity/Name** (algo como `12345Fulano.kapture`) |
 | `Identity/@Publisher` | Identidade do produto > **Package/Identity/Publisher** (formato `CN=GUID`) |
 | `PublisherDisplayName` | Identidade do produto > **Package/Properties/PublisherDisplayName**. É o nome de publicador da conta. |
 | Package Family Name (PFN) | Identidade do produto > **Package Family Name** (também aparece em Gerenciamento do produto). Formato `Name_hash`. Não vai no manifesto. |
@@ -71,6 +71,6 @@ A Store exige `Major.Minor.Build.0`. O script força o 4º segmento em `0`; com 
 - `webcam` e `microphone`: usadas por Media Foundation, WASAPI e `getUserMedia`.
 - `runFullTrust`: é obrigatória para qualquer app desktop Win32/Tauri empacotado em MSIX, porque o exe roda fora do sandbox UWP. Não dá para removê-la sem reescrever o app como UWP. É uma capability restrita: a Store pede uma justificativa no envio. Texto sugerido para o campo:
 
-  - Português: "O Cap é um aplicativo desktop Win32 (Tauri) de gravação de tela. Ele precisa de runFullTrust para executar como processo de desktop e acessar as APIs de captura de tela e áudio do Windows. A captura e o processamento são feitos apenas localmente, sem envio de dados."
-  - English: "Cap is a Win32 desktop (Tauri) screen recording app. It requires runFullTrust to run as a full desktop process and use the Windows screen and audio capture APIs. Capture and processing happen locally only, with no data uploaded."
+  - Português: "O kapture é um aplicativo desktop Win32 (Tauri) de gravação de tela. Ele precisa de runFullTrust para executar como processo de desktop e acessar as APIs de captura de tela e áudio do Windows. A captura e o processamento são feitos apenas localmente, sem envio de dados."
+  - English: "kapture is a Win32 desktop (Tauri) screen recording app. It requires runFullTrust to run as a full desktop process and use the Windows screen and audio capture APIs. Capture and processing happen locally only, with no data uploaded."
 - `graphicsCapture` não foi declarada: o app usa Windows.Graphics.Capture por monitor/janela em processo de desktop e o loopback WASAPI, que não exigem capability. Se a certificação ou um teste em máquina limpa mostrar bloqueio de captura, reavalie (não pude testar o MSIX instalado neste ambiente Linux).

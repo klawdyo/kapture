@@ -1,4 +1,4 @@
-//! Núcleo do Cap (Rust puro, sem Tauri/Windows).
+//! Núcleo do kapture (Rust puro, sem Tauri/Windows).
 //!
 //! Camadas: `domain` (tipos e regras), `ports` (traits das capacidades
 //! externas), `app` (casos de uso), `media` (cálculos puros de vídeo/áudio)

@@ -9,6 +9,7 @@
   --ok: #22c55e;
   --red: #ef4444;
   --red2: #dc2626;
+  --brand: #f93847; /* vermelho da bolinha da logo: só para o texto do nome kapture */
   font-family: 'Segoe UI', system-ui, sans-serif;
   font-size: 13px;
   color: var(--fg);

@@ -2,7 +2,7 @@
 //! aos casos de uso do `cap-core`. Erros chegam à interface como texto
 //! em português (contrato).
 
-use cap_core::app::{CamCtl, Lister, MicMeter, Recorder, RegionPick};
+use cap_core::app::{CamCtl, Lister, MicMeter, Recorder, RegionPick, UrlOpen};
 use cap_core::domain::{Devices, RecCfg, RecState, Region, Targets};
 use cap_core::log::{log_ipc, log_ui as ui_line};
 use cap_core::media::PickChan;
@@ -19,6 +19,7 @@ pub struct Core {
     pub cam: CamCtl,
     pub pick: RegionPick,
     pub meter: MicMeter,
+    pub url: UrlOpen,
     pub chan: Arc<PickChan>,
     pub log: Arc<dyn Log>,
 }
@@ -145,6 +146,13 @@ pub fn open_logs(st: St<'_>) -> Result<(), String> {
         .map_err(|e| format!("Não foi possível abrir a pasta de logs: {e}"));
     log_ipc(&*st.log, "open_logs", 0, &r);
     r
+}
+
+/// Abre no navegador padrão uma página de release do kapture (só
+/// `https://github.com/klawdyo/kapture/releases/*`; o resto é recusado).
+#[tauri::command]
+pub fn open_url(st: St<'_>, url: String) -> Result<(), String> {
+    st.url.open(&url).map_err(|e| e.0)
 }
 
 /// Redimensiona a janela da barra (px lógicos), mantendo centro e base.

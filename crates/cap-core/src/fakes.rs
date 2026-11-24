@@ -4,7 +4,9 @@
 use crate::domain::{Devices, Frame, RecCfg, RecState, Region, Stamp, Targets as TargetsData};
 use crate::lk;
 use crate::log::Lvl;
-use crate::ports::{Cam, Capture, Clock, Devs, Encoder, Events, Fs, Log, MicSink, Picker, Targets};
+use crate::ports::{
+    Cam, Capture, Clock, Devs, Encoder, Events, Fs, Log, MicSink, Opener, Picker, Targets,
+};
 use crate::{CapErr, Res};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -251,6 +253,20 @@ impl Cam for FakeCam {
     fn hide(&self) -> Res<()> {
         self.calls.log("hide");
         self.fail.check("hide")
+    }
+}
+
+/// Fake de `ports::Opener`. Operação: `open` (anota `open:<url>`).
+#[derive(Default)]
+pub struct FakeOpener {
+    pub calls: Calls,
+    pub fail: Inject,
+}
+
+impl Opener for FakeOpener {
+    fn open(&self, url: &str) -> Res<()> {
+        self.calls.log(format!("open:{url}"));
+        self.fail.check("open")
     }
 }
 

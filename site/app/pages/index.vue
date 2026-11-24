@@ -5,7 +5,7 @@ const downloadUrl = config.public.downloadUrl
 const LEFT = { title: 'text-start', description: 'text-start max-w-2xl', header: 'max-w-3xl' }
 
 const heroLinks = [
-  { label: 'Baixar MSI', to: downloadUrl, external: true, size: 'xl' as const, icon: 'i-lucide-download' },
+  { label: 'Baixar instalador', to: downloadUrl, external: true, size: 'xl' as const, icon: 'i-lucide-download' },
   { label: 'Ver recursos', to: '#recursos', color: 'neutral' as const, variant: 'outline' as const, size: 'xl' as const }
 ]
 
@@ -18,14 +18,14 @@ const features = [
 ]
 
 const spec = [
-  { k: 'Instalador', v: '~1,5 MB' },
+  { k: 'Instalação', v: 'por usuário, sem admin' },
   { k: 'Encoder', v: 'nativo do Windows' },
   { k: 'FFmpeg', v: 'não usa' }
 ]
 
 const steps = [
-  'Baixe o arquivo .msi.',
-  'Abra o instalador e conclua o assistente.',
+  'Baixe o kapture-win-Setup.exe.',
+  'Abra o instalador: ele instala em um clique, só para o seu usuário, sem pedir administrador.',
   'Pressione Ctrl+Shift+R para começar a gravar.'
 ]
 </script>
@@ -34,7 +34,7 @@ const steps = [
   <div>
     <UPageHero
       title="Grave a tela. Só isso."
-      description="Cap é um gravador de tela leve para Windows: um instalador minúsculo e uma pílula discreta no canto da tela."
+      description="kapture é um gravador de tela leve para Windows: um instalador minúsculo e uma pílula discreta no canto da tela."
       orientation="horizontal"
       :ui="{ title: 'text-balance', description: 'text-pretty' }"
     >
@@ -48,7 +48,7 @@ const steps = [
       </template>
       <div class="relative mx-auto grid aspect-square w-full max-w-sm place-items-center sm:max-w-md">
         <div aria-hidden="true" class="absolute inset-[6%] rounded-full border border-default" />
-        <BrandLogo :size="320" priority alt="Logo do Cap: obturador de câmera com ponto vermelho de gravação" class="w-[72%] [&_img]:size-full [&_img]:drop-shadow-2xl" />
+        <BrandLogo :size="320" priority alt="Logo do kapture: obturador de câmera com ponto vermelho de gravação" class="w-[72%] [&_img]:size-full [&_img]:drop-shadow-2xl" />
         <RecPill class="absolute bottom-[3%] left-1/2 -translate-x-1/2" />
       </div>
     </UPageHero>
@@ -73,7 +73,7 @@ const steps = [
       </ul>
     </UPageSection>
 
-    <UPageSection id="leve" title="Por que é leve" description="Cap usa o encoder nativo do Windows (Media Foundation) para gerar o vídeo. Não embute FFmpeg nem outros binários pesados, e a interface reaproveita o WebView do sistema. O resultado é um instalador pequeno, abertura rápida e gravações que não disputam recursos com o que você está mostrando." orientation="horizontal" :ui="{ description: 'text-pretty' }">
+    <UPageSection id="leve" title="Por que é leve" description="kapture usa o encoder nativo do Windows (Media Foundation) para gerar o vídeo. Não embute FFmpeg nem outros binários pesados, e a interface reaproveita o WebView do sistema. O resultado é um instalador pequeno, abertura rápida e gravações que não disputam recursos com o que você está mostrando." orientation="horizontal" :ui="{ description: 'text-pretty' }">
       <dl class="rounded-2xl bg-zinc-900 p-2 text-zinc-50 shadow-xl shadow-zinc-950/15 ring-1 ring-white/10 dark:bg-black dark:ring-white/20">
         <div v-for="r in spec" :key="r.k" class="flex items-baseline justify-between gap-6 px-5 py-4 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-white/10">
           <dt class="text-zinc-300">{{ r.k }}</dt>
@@ -95,10 +95,10 @@ const steps = [
           variant="outline"
           icon="i-lucide-shield-alert"
           title="Aviso do SmartScreen"
-          description="O MSI ainda não é assinado digitalmente, então o Windows pode exibir “O Windows protegeu o seu computador”. Clique em Mais informações e depois em Executar assim mesmo."
+          description="O instalador ainda não é assinado digitalmente, então o Windows pode exibir “O Windows protegeu o seu computador”. Clique em Mais informações e depois em Executar assim mesmo."
         />
         <div>
-          <UButton size="xl" label="Baixar MSI" :to="downloadUrl" external icon="i-lucide-download" />
+          <UButton size="xl" label="Baixar instalador" :to="downloadUrl" external icon="i-lucide-download" />
         </div>
       </div>
     </UPageSection>

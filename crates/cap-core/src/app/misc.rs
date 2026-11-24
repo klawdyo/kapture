@@ -1,8 +1,10 @@
 //! Casos de uso simples: listagens, webcam, seletor de região e VU meter.
 
-use crate::domain::{level_i16, region_ok, Devices, Region, Targets as TargetsData};
+use crate::domain::{
+    level_i16, region_ok, release_url_ok, Devices, Region, Targets as TargetsData,
+};
 use crate::lk;
-use crate::ports::{Cam, Capture, Devs, Events, Log, Picker, Targets};
+use crate::ports::{Cam, Capture, Devs, Events, Log, Opener, Picker, Targets};
 use crate::Res;
 use std::sync::{Arc, Mutex};
 
@@ -75,6 +77,31 @@ impl CamCtl {
         };
         if let Err(e) = &r {
             self.log.error(&format!("webcam: erro: {e}"));
+        }
+        r
+    }
+}
+
+/// Abre páginas de release no navegador (qualquer outra URL é recusada).
+pub struct UrlOpen {
+    opener: Arc<dyn Opener>,
+    log: Arc<dyn Log>,
+}
+
+impl UrlOpen {
+    pub fn new(opener: Arc<dyn Opener>, log: Arc<dyn Log>) -> Self {
+        UrlOpen { opener, log }
+    }
+    /// Abre `url` se for uma página de release do kapture.
+    pub fn open(&self, url: &str) -> Res<()> {
+        if !release_url_ok(url) {
+            self.log.warn(&format!("abrir url: recusada ({url})"));
+            return Err("Endereço não permitido.".into());
+        }
+        self.log.info(&format!("abrir url: {url}"));
+        let r = self.opener.open(url);
+        if let Err(e) = &r {
+            self.log.error(&format!("abrir url: erro: {e}"));
         }
         r
     }
@@ -243,6 +270,24 @@ mod tests {
                 "webcam: erro: h",
             ]
         );
+    }
+
+    #[test]
+    fn abre_so_release() {
+        let o = Arc::new(FakeOpener::default());
+        let log = Arc::new(FakeLog::default());
+        let u = UrlOpen::new(o.clone(), log.clone());
+        let ok = "https://github.com/klawdyo/kapture/releases/tag/v1.0.0";
+        u.open(ok).unwrap();
+        assert_eq!(o.calls.all(), vec![format!("open:{ok}")]);
+        assert_eq!(
+            u.open("https://evil.com/").unwrap_err().0,
+            "Endereço não permitido."
+        );
+        assert_eq!(o.calls.all().len(), 1); // a recusada não chega à porta
+        o.fail.set("open", "x");
+        assert_eq!(u.open(ok).unwrap_err().0, "x");
+        assert!(log.has("recusada") && log.has("abrir url: erro: x"));
     }
 
     #[test]

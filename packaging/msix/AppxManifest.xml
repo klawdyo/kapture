@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Manifesto do pacote MSIX do Cap (modelo para a Microsoft Store).
+  Manifesto do pacote MSIX do kapture (modelo para a Microsoft Store).
 
   PLACEHOLDERS substituídos por build-msix.ps1 (parâmetros ou variáveis de ambiente):
-    @IDENTITY_NAME@         Package/Identity/Name       (ex.: 12345Fulano.Cap)
+    @IDENTITY_NAME@         Package/Identity/Name       (ex.: 12345Fulano.kapture)
     @PUBLISHER@             Package/Identity/Publisher  (ex.: CN=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX)
     @PUBLISHER_DISPLAY@     Nome de exibição do publicador (Partner Center)
     @VERSION@               Major.Minor.Build.0 (a Store reserva o último segmento e exige 0)
@@ -32,7 +32,7 @@
             ProcessorArchitecture="x64" />
 
   <Properties>
-    <DisplayName>Cap</DisplayName>
+    <DisplayName>kapture</DisplayName>
     <PublisherDisplayName>@PUBLISHER_DISPLAY@</PublisherDisplayName>
     <Description>Gravador de tela leve com webcam e microfone</Description>
     <Logo>Assets\StoreLogo.png</Logo>
@@ -48,9 +48,9 @@
   </Resources>
 
   <Applications>
-    <Application Id="Cap" Executable="cap.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="kapture" Executable="kapture.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="Cap"
+        DisplayName="kapture"
         Description="Gravador de tela leve com webcam e microfone"
         BackgroundColor="transparent"
         AppListEntry="default"

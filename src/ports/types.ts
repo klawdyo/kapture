@@ -1,5 +1,5 @@
 // PORTAS (interfaces) — única fronteira entre a UI e o mundo externo.
-import type { Devices, RecCfg, RecState, Region, Targets } from '../domain/types'
+import type { Devices, RecCfg, RecState, Region, Targets, Upd } from '../domain/types'
 
 /** Função que cancela uma assinatura de evento. */
 export type Off = () => void
@@ -27,6 +27,10 @@ export interface Backend {
   logUi(lvl: LogLvl, msg: string): Promise<void>
   /** Abre a pasta de logs no Explorer. */
   openLogs(): Promise<void>
+  /** Versão instalada do app (ex.: '0.1.0'). */
+  version(): Promise<string>
+  /** Abre no navegador uma página de release (o backend recusa outras URLs). */
+  openUrl(url: string): Promise<void>
   /** Minimiza a janela atual. */
   minimize(): Promise<void>
   /** Fecha a janela atual (a da barra encerra o app). */
@@ -47,5 +51,11 @@ export interface Media {
   openCam(devName?: string): Promise<MediaStream>
 }
 
+/** Porta de atualizações (Releases do GitHub). */
+export interface Updates {
+  /** Atualização mais nova que `current`, ou null se não houver. Rejeita em falha de rede. */
+  check(current: string): Promise<Upd | null>
+}
+
 /** Conjunto de portas injetável. */
-export interface Ports { backend: Backend; media: Media }
+export interface Ports { backend: Backend; media: Media; updates: Updates }

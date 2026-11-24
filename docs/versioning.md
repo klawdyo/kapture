@@ -1,6 +1,6 @@
 # Versionamento e releases
 
-A versão do Cap é calculada automaticamente a partir dos commits. Ninguém edita número de versão à mão. A implementação está em `scripts/version.mjs` (testes em `scripts/version.test.mjs`).
+A versão do kapture é calculada automaticamente a partir dos commits. Ninguém edita número de versão à mão. A implementação está em `scripts/version.mjs` (testes em `scripts/version.test.mjs`).
 
 ## Commits (Conventional Commits)
 
@@ -53,7 +53,7 @@ Próxima versão: **2.0.1**.
 
 - `dev` concentra o desenvolvimento. Os PRs entram nela (e em `main` só via `dev`).
 - `main` só recebe releases finais: o merge de `dev` em `main`.
-- Quando a `main` recebe o push, o workflow `release.yml` calcula a versão, aplica em `tauri.conf.json`, `package.json` e nos `Cargo.toml` (só dentro do build, sem commit), gera o MSI (o MSIX está desligado por enquanto, veja `docs/msix-store.md`), cria a tag `vX.Y.Z` e o GitHub Release. A tag é criada no release porque o ambiente de desenvolvimento não consegue criar tags na `main`.
+- Quando a `main` recebe o push, o workflow `release.yml` calcula a versão, aplica em `tauri.conf.json`, `package.json` e nos `Cargo.toml` (só dentro do build, sem commit), gera o MSI e o instalador Velopack (o MSIX está desligado por enquanto, veja `docs/msix-store.md`), cria a tag `vX.Y.Z` e o GitHub Release. A tag é criada no release porque o ambiente de desenvolvimento não consegue criar tags na `main`.
 - Os números de versão guardados no repositório são apenas placeholders. A fonte da verdade são as tags.
 - O release também pode ser disparado manualmente, a partir da `main`.
 

@@ -1,4 +1,4 @@
-//! Implementação REAL de `ports::Log`: arquivo `cap.log` com rotação.
+//! Implementação REAL de `ports::Log`: arquivo `kapture.log` com rotação.
 //! Só usa a biblioteca padrão (sem `log`/`tracing`); cada linha é gravada
 //! e descarregada (`flush`) na hora, para sobreviver a um aborto.
 
@@ -155,7 +155,7 @@ mod tests {
             .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
             .collect();
         nomes.sort();
-        assert_eq!(nomes, vec!["cap.1.log", "cap.2.log", "cap.log"]);
+        assert_eq!(nomes, vec!["kapture.1.log", "kapture.2.log", "kapture.log"]);
         // A linha mais recente está no arquivo ativo e nenhum passa do limite.
         assert!(fs::read_to_string(l.path(0)).unwrap().contains("linha 29"));
         for i in 0..3 {
@@ -184,11 +184,30 @@ mod tests {
     }
 
     #[test]
+    fn falha_ao_gravar_nao_derruba_nem_conta_bytes() {
+        let d = tmp("gravar");
+        let l = FileLog::with(&d, MAX_BYTES, KEEP, at_zero());
+        l.info("ok");
+        let antes = fs::read_to_string(l.path(0)).unwrap();
+        // Troca o arquivo aberto por um somente leitura: gravar falha, em
+        // qualquer sistema e mesmo como administrador.
+        let size = {
+            let mut st = lk(&l.st);
+            st.file = Some(File::open(l.path(0)).unwrap());
+            st.size
+        };
+        l.error("perdida");
+        assert_eq!(fs::read_to_string(l.path(0)).unwrap(), antes);
+        assert_eq!(lk(&l.st).size, size);
+        let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
     fn relogio_do_sistema_e_usado_por_padrao() {
         assert!(sys_ms() > 1_700_000_000_000);
         let d = tmp("relogio");
         FileLog::new(&d).info("agora");
-        let s = fs::read_to_string(d.join("cap.log")).unwrap();
+        let s = fs::read_to_string(d.join("kapture.log")).unwrap();
         assert!(s.starts_with("20"));
         let _ = fs::remove_dir_all(&d);
     }

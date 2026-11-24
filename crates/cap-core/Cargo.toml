@@ -2,7 +2,7 @@
 name = "cap-core"
 version = "0.1.0"
 edition = "2021"
-description = "Núcleo do Cap: domínio, casos de uso, portas e fakes (Rust puro)"
+description = "Núcleo do kapture: domínio, casos de uso, portas e fakes (Rust puro)"
 license = "MIT"
 
 [dependencies]

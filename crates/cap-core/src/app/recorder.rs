@@ -241,7 +241,10 @@ mod tests {
         let k = kit();
         assert_eq!(k.rec.state(), RecState::idle());
         k.rec.start(&cfg()).unwrap();
-        assert_eq!(k.enc.calls.all()[0], "open:/videos/cap-20260102-030405.mp4");
+        assert_eq!(
+            k.enc.calls.all()[0],
+            "open:/videos/kapture-20260102-030405.mp4"
+        );
         assert_eq!(k.fs.calls.all(), vec!["videos_dir", "ensure:/videos"]);
         k.clock.advance(2500);
         assert_eq!(
@@ -264,7 +267,7 @@ mod tests {
         k.clock.advance(1500);
         assert_eq!(k.rec.state().secs, 4);
         let path = k.rec.stop().unwrap();
-        assert_eq!(path, "/videos/cap-20260102-030405.mp4");
+        assert_eq!(path, "/videos/kapture-20260102-030405.mp4");
         assert_eq!(k.rec.state(), RecState::idle());
         assert_eq!(
             k.cap.calls.all(),
@@ -281,7 +284,7 @@ mod tests {
         c.dir = Some("D:/x".into());
         k.rec.start(&c).unwrap();
         assert_eq!(k.fs.calls.all(), vec!["ensure:D:/x"]);
-        assert!(k.rec.stop().unwrap().starts_with("D:/x/cap-"));
+        assert!(k.rec.stop().unwrap().starts_with("D:/x/kapture-"));
     }
 
     #[test]
@@ -365,13 +368,13 @@ mod tests {
         assert!(m[0].starts_with("gravação: iniciar (modo=Screen"));
         assert_eq!(
             m[1],
-            "gravação: iniciada em /videos/cap-20260102-030405.mp4"
+            "gravação: iniciada em /videos/kapture-20260102-030405.mp4"
         );
         assert_eq!(m[2], "gravação: pausada em 2 s");
         assert_eq!(m[3], "gravação: retomada");
         assert_eq!(
             m[4],
-            "gravação: finalizada (2 s) em /videos/cap-20260102-030405.mp4"
+            "gravação: finalizada (2 s) em /videos/kapture-20260102-030405.mp4"
         );
     }
 
