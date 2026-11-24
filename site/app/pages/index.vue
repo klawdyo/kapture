@@ -23,7 +23,7 @@ const features = [
   },
   {
     title: 'Leve de verdade',
-    detail: 'Executável com menos de 2 MB, abre rápido e não pesa enquanto você grava.'
+    detail: 'Executável com menos de 3 MB, abre rápido e não pesa enquanto você grava.'
   }
 ]
 
@@ -56,7 +56,7 @@ const installSteps = [
             </h1>
 
             <p class="mt-5 max-w-[44ch] text-lg leading-relaxed text-pretty text-[var(--ink-secondary)]">
-              Gravador de tela para Windows com menos de 2 MB.
+              Gravador de tela para Windows com menos de 3 MB.
             </p>
 
             <div class="mt-8 flex flex-wrap items-center gap-3.5">

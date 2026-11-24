@@ -15,7 +15,7 @@ Gravador de tela leve para Windows (Tauri v2 + Vue 3 + Rust). Leia isto antes de
 - Nunca altere as imagens originais em `assets/`. Gere cópias (`scripts/make-icons.py`).
 - Pílula de gravação sem botão de pausa. Barra e seletor de área arrastáveis.
 - **Distribuição só pelo `kapture.exe` solto, sem instalador, sem MSI, sem Velopack.** Sem instalação: o usuário baixa e executa. O MSIX da Store (`packaging/msix`) fica, desligado. O app existe para cumprir a obrigação e deve ser o mais leve possível: não adicione dependências pesadas (nada de reqwest, plugins do Tauri sem necessidade, FFmpeg).
-- Tamanho exibido no site: manter sincronizado como **"menos de 2 MB"** (hero, recursos e meta). Sempre que o tamanho real do `kapture.exe` compilado ultrapassar 2 MB, atualizar esse valor no site.
+- Tamanho exibido no site: manter sincronizado como **"menos de 3 MB"** (hero, recursos e meta). O `kapture.exe` compilado mediu 2,69 MB no release. Sempre que o tamanho real ultrapassar 3 MB, atualizar esse valor no site.
 - Assinatura digital (SmartScreen): o dono decidiu manter o `kapture.exe` sem assinatura digital por enquanto, mantendo o aviso discreto do SmartScreen no site e no README.
 - Commits breaking (`!`) são proibidos sem ordem explícita do dono.
 
