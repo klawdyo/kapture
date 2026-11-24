@@ -1,4 +1,5 @@
 // Implementação FAKE das portas, para testes (sem Tauri nem câmera).
+import { pickCam, type VideoDev } from '../domain/cam'
 import type { Devices, RecCfg, RecState, Region, Targets } from '../domain/types'
 import type { Backend, Media, Off } from './types'
 
@@ -55,6 +56,8 @@ export class FakeBackend implements Backend {
   async resume() { await this.c('resume'); this.st = { state: 'rec', secs: this.st.secs } }
   async stop() { await this.c('stop'); this.st = { state: 'idle', secs: 0 }; return this.path }
   async state() { await this.c('state'); return this.st }
+  async micStart(micId: string) { await this.c('micStart', micId) }
+  async micStop() { await this.c('micStop') }
   async fitSquare(size: number) { await this.c('fitSquare', size) }
   onMic(cb: (l: number) => void) { return this.on('mic', cb) }
   onState(cb: (s: RecState) => void) { return this.on('state', cb) }
@@ -63,16 +66,21 @@ export class FakeBackend implements Backend {
 }
 
 export class FakeMedia implements Media {
-  /** deviceIds pedidos. */
+  /** Câmeras que o "navegador" enumera. */
+  cams: VideoDev[] = []
+  /** Nomes pedidos. */
   calls: (string | undefined)[] = []
+  /** deviceIds resolvidos (undefined = câmera padrão). */
+  ids: (string | undefined)[] = []
   /** Quantas trilhas foram paradas. */
   stopped = 0
   /** Se definido, openCam falha. */
   fail = false
 
-  async openCam(devId?: string): Promise<MediaStream> {
-    this.calls.push(devId)
+  async openCam(devName?: string): Promise<MediaStream> {
+    this.calls.push(devName)
     if (this.fail) throw new Error('sem câmera')
+    this.ids.push(pickCam(this.cams, devName))
     return { getTracks: () => [{ stop: () => { this.stopped++ } }] } as unknown as MediaStream
   }
 }

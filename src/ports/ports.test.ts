@@ -69,9 +69,12 @@ describe('FakeBackend', () => {
 describe('FakeMedia', () => {
   it('abre e para trilhas; pode falhar', async () => {
     const m = new FakeMedia()
-    const s = await m.openCam('x')
+    m.cams = [{ deviceId: 'h1', label: 'Logitech C920' }]
+    const s = await m.openCam('c920')
+    await m.openCam('outra')
     s.getTracks().forEach((t) => t.stop())
-    expect(m.calls).toEqual(['x'])
+    expect(m.calls).toEqual(['c920', 'outra'])
+    expect(m.ids).toEqual(['h1', undefined])
     expect(m.stopped).toBe(1)
     m.fail = true
     await expect(m.openCam()).rejects.toThrow('sem câmera')
@@ -104,10 +107,13 @@ describe('realBackend', () => {
     await realBackend.resume()
     await realBackend.stop()
     await realBackend.state()
+    await realBackend.micStart('m1')
+    await realBackend.micStop()
     expect(invoke.mock.calls).toEqual([
       ['list_targets'], ['list_devices'], ['toggle_cam', { visible: true, devId: 'c' }],
       ['pick_region'], ['submit_region', { region: r }], ['start_rec', { cfg }],
       ['pause_rec'], ['resume_rec'], ['stop_rec'], ['get_state'],
+      ['mic_start', { micId: 'm1' }], ['mic_stop'],
     ])
   })
   it('assina eventos entregando o payload', async () => {
@@ -131,12 +137,39 @@ describe('realBackend', () => {
 })
 
 describe('realMedia', () => {
-  it('pede a câmera padrão ou específica', async () => {
+  const setMd = (value: unknown) =>
+    Object.defineProperty(navigator, 'mediaDevices', { value, configurable: true })
+  it('sem nome usa a câmera padrão sem enumerar', async () => {
     const gum = vi.fn().mockResolvedValue('stream')
-    Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: gum }, configurable: true })
+    const enu = vi.fn()
+    setMd({ getUserMedia: gum, enumerateDevices: enu })
     await realMedia.openCam()
-    await realMedia.openCam('abc')
-    expect(gum).toHaveBeenNthCalledWith(1, { video: true, audio: false })
-    expect(gum).toHaveBeenNthCalledWith(2, { video: { deviceId: { exact: 'abc' } }, audio: false })
+    expect(gum).toHaveBeenCalledWith({ video: true, audio: false })
+    expect(enu).not.toHaveBeenCalled()
+  })
+  it('resolve o deviceId pelo label', async () => {
+    const gum = vi.fn().mockResolvedValue('stream')
+    const enu = vi.fn().mockResolvedValue([
+      { kind: 'audioinput', deviceId: 'a', label: 'Mic' },
+      { kind: 'videoinput', deviceId: 'h1', label: 'Logitech C920' },
+    ])
+    setMd({ getUserMedia: gum, enumerateDevices: enu })
+    await realMedia.openCam('Logitech C920')
+    expect(gum).toHaveBeenCalledWith({ video: { deviceId: { exact: 'h1' } }, audio: false })
+    await realMedia.openCam('inexistente') // fallback: padrão
+    expect(gum).toHaveBeenLastCalledWith({ video: true, audio: false })
+  })
+  it('pede permissão antes quando os labels vêm vazios', async () => {
+    const stop = vi.fn()
+    const gum = vi.fn().mockResolvedValue({ getTracks: () => [{ stop }] })
+    const enu = vi
+      .fn()
+      .mockResolvedValueOnce([{ kind: 'videoinput', deviceId: 'h1', label: '' }])
+      .mockResolvedValueOnce([{ kind: 'videoinput', deviceId: 'h1', label: 'Cam X' }])
+    setMd({ getUserMedia: gum, enumerateDevices: enu })
+    await realMedia.openCam('Cam X')
+    expect(stop).toHaveBeenCalledTimes(1)
+    expect(gum).toHaveBeenCalledTimes(2)
+    expect(gum).toHaveBeenLastCalledWith({ video: { deviceId: { exact: 'h1' } }, audio: false })
   })
 })

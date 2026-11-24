@@ -16,6 +16,10 @@ export interface Backend {
   resume(): Promise<void>
   stop(): Promise<string>
   state(): Promise<RecState>
+  /** Liga o VU meter do microfone (reinicia sem erro se já ligado). */
+  micStart(micId: string): Promise<void>
+  /** Desliga o VU meter. */
+  micStop(): Promise<void>
   /** Força a janela atual a ficar quadrada (px físicos). */
   fitSquare(size: number): Promise<void>
   onMic(cb: (level: number) => void): Promise<Off>
@@ -26,7 +30,8 @@ export interface Backend {
 
 /** Porta de mídia do navegador (câmera). */
 export interface Media {
-  openCam(devId?: string): Promise<MediaStream>
+  /** `devName` é o nome amigável da câmera (id do backend). */
+  openCam(devName?: string): Promise<MediaStream>
 }
 
 /** Conjunto de portas injetável. */

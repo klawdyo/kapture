@@ -31,7 +31,7 @@ onBeforeUnmount(t.dispose)
       <ModeSwitch :model-value="t.mode" @update:model-value="t.setMode" />
       <Select v-if="t.opts.length" v-model="t.tid" :options="t.opts" title="Alvo" />
       <DevSelect :model-value="t.cam" :devs="t.devs.cams" icon="cam" none="Sem câmera" @update:model-value="t.setCam" />
-      <DevSelect v-model="t.mic" :devs="t.devs.mics" icon="mic" none="Sem microfone" />
+      <DevSelect :model-value="t.mic" :devs="t.devs.mics" icon="mic" none="Sem microfone" @update:model-value="t.setMic" />
       <VuMeter :value="t.lvl" />
       <template v-if="t.cfg">
         <Btn icon="sys" :on="t.sys" title="Áudio do sistema" @click="t.toggleSys()" />

@@ -1,9 +1,10 @@
 //! Casos de uso simples: listagens, webcam, seletor de região e VU meter.
 
 use crate::domain::{level_i16, region_ok, Devices, Region, Targets as TargetsData};
+use crate::lk;
 use crate::ports::{Cam, Capture, Devs, Events, Picker, Targets};
 use crate::Res;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// Lista alvos de captura e dispositivos.
 pub struct Lister {
@@ -63,25 +64,45 @@ impl RegionPick {
 }
 
 /// Medidor de nível do microfone (VU meter).
+///
+/// Regra: no máximo um medidor ativo. Iniciar com o mesmo microfone já
+/// medido é um no-op (reaproveita, p.ex. quando a gravação começa com o
+/// medidor ligado); com outro microfone, reinicia sem erro.
 pub struct MicMeter {
     cap: Arc<dyn Capture>,
     events: Arc<dyn Events>,
+    cur: Mutex<Option<String>>,
 }
 
 impl MicMeter {
     pub fn new(cap: Arc<dyn Capture>, events: Arc<dyn Events>) -> Self {
-        MicMeter { cap, events }
+        MicMeter {
+            cap,
+            events,
+            cur: Mutex::new(None),
+        }
     }
     /// Começa a medir e emitir `mic-level` para o microfone indicado.
     pub fn start(&self, mic_id: &str) -> Res<()> {
+        let mut cur = lk(&self.cur);
+        if cur.as_deref() == Some(mic_id) {
+            return Ok(());
+        }
+        // Troca de microfone: o anterior para antes (erro ignorado).
+        if cur.take().is_some() {
+            let _ = self.cap.mic_stop();
+        }
         let events = self.events.clone();
         self.cap.mic_start(
             mic_id,
             Arc::new(move |pcm: &[i16]| events.mic_level(level_i16(pcm))),
-        )
+        )?;
+        *cur = Some(mic_id.to_string());
+        Ok(())
     }
     /// Para de medir e zera o indicador.
     pub fn stop(&self) -> Res<()> {
+        lk(&self.cur).take();
         let r = self.cap.mic_stop();
         self.events.mic_level(0.0);
         r
@@ -175,5 +196,24 @@ mod tests {
         cap.fail.set("mic_stop", "b");
         assert_eq!(m.start("mic1").unwrap_err().0, "a");
         assert_eq!(m.stop().unwrap_err().0, "b");
+    }
+
+    #[test]
+    fn mic_meter_reaproveita_e_reinicia() {
+        let cap = Arc::new(FakeCapture::default());
+        let ev = Arc::new(FakeEvents::default());
+        let m = MicMeter::new(cap.clone(), ev);
+        m.start("a").unwrap();
+        m.start("a").unwrap(); // mesmo microfone: reaproveita
+        assert_eq!(cap.calls.all().len(), 1);
+        m.start("b").unwrap(); // outro: para o anterior e reinicia
+        assert_eq!(cap.calls.all(), ["mic_start:a", "mic_stop", "mic_start:b"]);
+        // Falha ao iniciar não deixa o medidor marcado como ativo.
+        m.stop().unwrap();
+        cap.fail.set("mic_start", "x");
+        assert!(m.start("a").is_err());
+        cap.fail.clear("mic_start");
+        m.start("a").unwrap(); // não ficou marcado: inicia de fato
+        assert_eq!(cap.calls.all().last().unwrap(), "mic_start:a");
     }
 }

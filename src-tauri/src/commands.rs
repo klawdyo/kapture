@@ -67,7 +67,8 @@ pub async fn start_rec(st: St<'_>, mut cfg: RecCfg) -> Result<(), String> {
     cfg.mic_id = cfg.mic_id.filter(|m| !m.is_empty());
     blk(st, move |c| {
         c.rec.start(&cfg)?;
-        // O VU meter é só visual: se falhar, a gravação segue.
+        // O VU meter é só visual: se falhar, a gravação segue. Se já mede
+        // este microfone (ligado pela barra), `start` reaproveita sem erro.
         if let Some(m) = &cfg.mic_id {
             let _ = c.meter.start(m);
         }
@@ -88,12 +89,20 @@ pub async fn resume_rec(st: St<'_>) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn stop_rec(st: St<'_>) -> Result<String, String> {
-    blk(st, |c| {
-        let r = c.rec.stop();
-        let _ = c.meter.stop();
-        r
-    })
-    .await
+    // O medidor continua ligado: quem o desliga é `mic_stop` (a barra).
+    blk(st, |c| c.rec.stop()).await
+}
+
+/// Liga o VU meter (reinicia sem erro se já houver um ativo).
+#[tauri::command]
+pub async fn mic_start(st: St<'_>, mic_id: String) -> Result<(), String> {
+    blk(st, move |c| c.meter.start(&mic_id)).await
+}
+
+/// Desliga o VU meter e zera o nível.
+#[tauri::command]
+pub async fn mic_stop(st: St<'_>) -> Result<(), String> {
+    blk(st, |c| c.meter.stop()).await
 }
 
 #[tauri::command]

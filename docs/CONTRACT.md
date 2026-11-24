@@ -37,7 +37,17 @@ packaging/msix/             # AppxManifest + script MakeAppx
 | pause_rec / resume_rec | - | void |
 | stop_rec | - | string (caminho do MP4) |
 | get_state | - | RecState |
+| mic_start | `{micId:string}` | void (liga o VU meter; emite `mic-level`) |
+| mic_stop | - | void (desliga o VU meter e zera o nível) |
 Erros: string em português.
+
+Regras do VU meter (`MicMeter`, testadas em cap-core): no máximo um medidor ativo.
+`mic_start` com o mesmo microfone já medido é no-op; com outro, reinicia sem erro.
+`start_rec` reaproveita o medidor ligado (e o inicia se não houver); `stop_rec` NÃO o desliga:
+quem liga/desliga é a barra (ao escolher/alterar o microfone, 'nenhum' ou ao fechar).
+
+Câmera: o `id` de `Dev` da câmera é o nome amigável; o deviceId do getUserMedia (hash no WebView2)
+é resolvido no frontend casando o `label` de `enumerateDevices()` com esse nome (domain/cam.ts).
 
 ## Eventos (emit)
 `mic-level` `{level:number 0..1}` | `rec-state` RecState | `hotkey` (Ctrl+Shift+R alterna gravação)

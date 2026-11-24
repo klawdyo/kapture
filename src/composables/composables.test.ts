@@ -36,6 +36,22 @@ describe('useToolbar', () => {
     expect(t.clock.value).toBe('01:15')
     t.dispose()
     expect(b.subs('mic')).toBe(0)
+    expect(b.calls.at(-1)).toEqual(['micStop', undefined]) // descartar desliga o medidor
+  })
+  it('medidor liga ao escolher o microfone e desliga com nenhum', async () => {
+    const t = useToolbar()
+    await t.setMic('m1')
+    await t.setMic('m2')
+    await t.setMic('')
+    expect(t.mic.value).toBe('')
+    expect(b.calls.filter((c) => c[0].startsWith('mic')).map((c) => [c[0], c[1]])).toEqual([
+      ['micStart', 'm1'], ['micStart', 'm2'], ['micStop', undefined],
+    ])
+    b.fail = 'sem mic'
+    await t.setMic('m1')
+    expect(t.err.value).toBe('sem mic')
+    t.dispose() // falha ao desligar é ignorada
+    await flush()
   })
   it('mostra erro de init', async () => {
     b.fail = 'Falha ao listar'

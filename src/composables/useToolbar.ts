@@ -98,6 +98,12 @@ export function useToolbar() {
     return run(() => b.toggleCam(id !== '', id || undefined))
   }
 
+  /** Liga o medidor ao escolher/alterar o microfone; '' o desliga. */
+  function setMic(id: string): Promise<void> {
+    mic.value = id
+    return run(() => (id === '' ? b.micStop() : b.micStart(id)))
+  }
+
   const toggleSys = (): void => { sys.value = !sys.value }
   const toggleCfg = (): void => { cfg.value = !cfg.value }
 
@@ -117,11 +123,12 @@ export function useToolbar() {
   function dispose(): void {
     offs.forEach((f) => f())
     offs = []
+    void b.micStop().catch(() => {}) // descarta: desliga o medidor
   }
 
   return {
     mode, cam, mic, tid, sys, fps, devs, level, rec, err, saved, cfg,
     active, paused, clock, opts, lvl,
-    init, dispose, start, stop, pause, toggle, setMode, setCam, toggleSys, toggleCfg,
+    init, dispose, start, stop, pause, toggle, setMode, setCam, toggleSys, toggleCfg, setMic,
   }
 }

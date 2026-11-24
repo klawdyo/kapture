@@ -1,6 +1,7 @@
 // Testes da lógica pura de domínio.
 import { describe, expect, it } from 'vitest'
 import { buildCfg, FPS, targetOpts } from './cfg'
+import { pickCam } from './cam'
 import { msg } from './err'
 import { idle, isActive, isPaused } from './rec'
 import { big, label, MIN, norm, phys } from './rect'
@@ -82,5 +83,28 @@ describe('err e size', () => {
     expect(fit(100, 100)).toBeNull()
     expect(fit(100, 150)).toBe(150)
     expect(fit(200, 150)).toBe(200)
+  })
+})
+
+describe('cam', () => {
+  const l = [
+    { deviceId: 'a', label: 'USB Camera' },
+    { deviceId: 'b', label: 'Logitech C920 HD Pro' },
+    { deviceId: 'c', label: 'Logitech C920' },
+    { deviceId: 'd', label: '' },
+  ]
+  it('prefere igualdade, ignorando caixa e espaços', () => {
+    expect(pickCam(l, ' logitech c920 ')).toBe('c')
+  })
+  it('aceita "contém" nos dois sentidos', () => {
+    expect(pickCam(l, 'C920 HD')).toBe('b')
+    expect(pickCam(l, 'Integrated USB Camera (04f2:b6d0)')).toBe('a')
+    expect(pickCam([{ deviceId: 'a', label: 'USB Camera' }], 'USB Camera (04f2:b6d0)')).toBe('a')
+  })
+  it('sem nome, sem casamento ou label vazio: padrão', () => {
+    expect(pickCam(l)).toBeUndefined()
+    expect(pickCam(l, '  ')).toBeUndefined()
+    expect(pickCam(l, 'nada')).toBeUndefined()
+    expect(pickCam([{ deviceId: 'd', label: '' }], 'x')).toBeUndefined()
   })
 })

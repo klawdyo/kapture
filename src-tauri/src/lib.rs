@@ -120,6 +120,8 @@ pub fn run() {
             commands::resume_rec,
             commands::stop_rec,
             commands::get_state,
+            commands::mic_start,
+            commands::mic_stop,
         ])
         .run(tauri::generate_context!())
         .expect("falha ao iniciar o Cap");
