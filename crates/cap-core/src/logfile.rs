@@ -184,6 +184,25 @@ mod tests {
     }
 
     #[test]
+    fn falha_ao_gravar_nao_derruba_nem_conta_bytes() {
+        let d = tmp("gravar");
+        let l = FileLog::with(&d, MAX_BYTES, KEEP, at_zero());
+        l.info("ok");
+        let antes = fs::read_to_string(l.path(0)).unwrap();
+        // Troca o arquivo aberto por um somente leitura: gravar falha, em
+        // qualquer sistema e mesmo como administrador.
+        let size = {
+            let mut st = lk(&l.st);
+            st.file = Some(File::open(l.path(0)).unwrap());
+            st.size
+        };
+        l.error("perdida");
+        assert_eq!(fs::read_to_string(l.path(0)).unwrap(), antes);
+        assert_eq!(lk(&l.st).size, size);
+        let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
     fn relogio_do_sistema_e_usado_por_padrao() {
         assert!(sys_ms() > 1_700_000_000_000);
         let d = tmp("relogio");
