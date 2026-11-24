@@ -21,6 +21,10 @@ cargo test --workspace            # Windows
 cargo check --manifest-path src-tauri/Cargo.toml
 ```
 
+## Onde ficam os logs
+
+Em tempo de execução o app grava `%LOCALAPPDATA%\Cap\logs\cap.log` (fallback: `%TEMP%\Cap\logs`), com rotação em `cap.1.log` e `cap.2.log` ao passar de 512 KB. A rotina é do `cap-core` (`log` e `logfile`, com 100% de cobertura) e o botão **Abrir logs**, no painel de configurações da barra, abre a pasta no Explorer. Para investigar um erro numa máquina real, peça o `cap.log`: ele traz o HRESULT em hexadecimal de cada falha dos adaptadores Windows, os erros do WebView e, se o app abortar, a mensagem e o local (`arquivo:linha`) do pânico. O release usa `strip = true`, então o backtrace do pânico tem só endereços.
+
 ## MSI
 
 ```

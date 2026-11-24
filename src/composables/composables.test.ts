@@ -53,6 +53,14 @@ describe('useToolbar', () => {
     t.dispose() // falha ao desligar é ignorada
     await flush()
   })
+  it('abre a pasta de logs e mostra a falha', async () => {
+    const t = useToolbar()
+    await t.openLogs()
+    expect(b.calls.at(-1)![0]).toBe('openLogs')
+    b.fail = 'Não foi possível abrir a pasta de logs'
+    await t.openLogs()
+    expect(t.err.value).toBe('Não foi possível abrir a pasta de logs')
+  })
   it('mostra erro de init', async () => {
     b.fail = 'Falha ao listar'
     const t = useToolbar()
@@ -137,6 +145,20 @@ describe('useWebcam', () => {
     await w.init()
     expect(m.calls).toEqual([undefined])
     expect(w.err.value).toBe('Não foi possível abrir a câmera')
+    const l = b.calls.find((c) => c[0] === 'logUi')![1] as { lvl: string; msg: string }
+    expect(l.lvl).toBe('error')
+    expect(l.msg).toContain('[webcam] getUserMedia falhou (dev=padrão)')
+    expect(l.msg).toContain('sem câmera')
+    w.dispose()
+  })
+  it('falha ao registrar a causa não atrapalha', async () => {
+    history.replaceState(null, '', '/webcam.html?dev=c9')
+    m.fail = true
+    b.fail = 'sem log'
+    const w = useWebcam()
+    await w.init()
+    expect(w.err.value).toBe('Não foi possível abrir a câmera')
+    expect(b.calls.find((c) => c[0] === 'logUi')![1]).toMatchObject({ msg: expect.stringContaining('dev=c9') })
     w.dispose()
   })
 })

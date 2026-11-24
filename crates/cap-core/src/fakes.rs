@@ -3,7 +3,8 @@
 
 use crate::domain::{Devices, Frame, RecCfg, RecState, Region, Stamp, Targets as TargetsData};
 use crate::lk;
-use crate::ports::{Cam, Capture, Clock, Devs, Encoder, Events, Fs, MicSink, Picker, Targets};
+use crate::log::Lvl;
+use crate::ports::{Cam, Capture, Clock, Devs, Encoder, Events, Fs, Log, MicSink, Picker, Targets};
 use crate::{CapErr, Res};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -285,6 +286,31 @@ impl Events for FakeEvents {
     }
 }
 
+/// Fake de `ports::Log`: guarda (nível, mensagem) em memória.
+#[derive(Default)]
+pub struct FakeLog(Mutex<Vec<(Lvl, String)>>);
+
+impl FakeLog {
+    /// Todas as mensagens, em ordem.
+    pub fn all(&self) -> Vec<(Lvl, String)> {
+        lk(&self.0).clone()
+    }
+    /// Só os textos, em ordem.
+    pub fn msgs(&self) -> Vec<String> {
+        lk(&self.0).iter().map(|(_, m)| m.clone()).collect()
+    }
+    /// Alguma mensagem contém `s`?
+    pub fn has(&self, s: &str) -> bool {
+        lk(&self.0).iter().any(|(_, m)| m.contains(s))
+    }
+}
+
+impl Log for FakeLog {
+    fn write(&self, lvl: Lvl, msg: &str) {
+        lk(&self.0).push((lvl, msg.to_string()));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -486,5 +512,14 @@ mod tests {
         });
         assert_eq!(*lk(&e.levels), vec![0.5]);
         assert_eq!(lk(&e.states)[0].state, St::Rec);
+
+        let l = FakeLog::default();
+        l.debug("d");
+        l.info("i");
+        l.warn("w");
+        l.error("e");
+        assert_eq!(l.msgs(), vec!["d", "i", "w", "e"]);
+        assert_eq!(l.all()[2], (Lvl::Warn, "w".to_string()));
+        assert!(l.has("i") && !l.has("zzz"));
     }
 }

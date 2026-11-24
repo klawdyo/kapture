@@ -1,6 +1,7 @@
 //! Adaptador `Picker`: abre a janela `region-selector` e espera a
 //! resposta que chega por `submit_region` através do canal puro.
 
+use crate::logging;
 use cap_core::domain::Region;
 use cap_core::media::PickChan;
 use cap_core::ports::Picker;
@@ -43,10 +44,17 @@ impl Picker for TauriPicker {
             .iter()
             .find(|w| w.label == LABEL)
             .cloned()
-            .ok_or(ERR)?;
+            .ok_or_else(|| {
+                logging::get().error("seletor de área: configuração da janela não encontrada");
+                ERR
+            })?;
         let win = WebviewWindowBuilder::from_config(&self.app, &cfg)
             .and_then(|b| b.build())
-            .map_err(|_| CapErr::from(ERR))?;
+            .map_err(|e| {
+                logging::get().error(&format!("seletor de área: falha ao criar a janela: {e}"));
+                CapErr::from(ERR)
+            })?;
+        logging::get().info("seletor de área: janela criada");
         // O overlay de seleção não deve aparecer em gravações em andamento.
         let _ = win.set_content_protected(true);
         // Fechar a janela (Alt+F4) sem responder equivale a cancelar.
@@ -56,8 +64,12 @@ impl Picker for TauriPicker {
                 chan.submit(None);
             }
         });
-        let r = rx.recv().map_err(|_| CapErr::from(ERR));
+        let r = rx.recv().map_err(|_| {
+            logging::get().error("seletor de área: canal de resposta encerrado");
+            CapErr::from(ERR)
+        });
         let _ = win.close();
+        logging::get().info("seletor de área: janela fechada");
         r
     }
 }

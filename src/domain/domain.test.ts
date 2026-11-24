@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { buildCfg, FPS, targetOpts } from './cfg'
 import { pickCam } from './cam'
-import { msg } from './err'
+import { detail, msg } from './err'
+import { fmtError, fmtReject, fmtVue } from './log'
 import { idle, isActive, isPaused } from './rec'
 import { big, label, MIN, norm, phys } from './rect'
 import { fit } from './size'
@@ -106,5 +107,37 @@ describe('cam', () => {
     expect(pickCam(l, '  ')).toBeUndefined()
     expect(pickCam(l, 'nada')).toBeUndefined()
     expect(pickCam([{ deviceId: 'd', label: '' }], 'x')).toBeUndefined()
+  })
+})
+
+describe('erros no log', () => {
+  it('detail: pilha, texto, JSON e valores estranhos', () => {
+    const e = new Error('x')
+    expect(detail(e)).toBe(e.stack)
+    const sem = new Error('y')
+    sem.stack = undefined
+    expect(detail(sem)).toBe('Error: y')
+    expect(detail('texto')).toBe('texto')
+    expect(detail({ a: 1 })).toBe('{"a":1}')
+    expect(detail(undefined)).toBe('undefined')
+    const ciclo: Record<string, unknown> = {}
+    ciclo.self = ciclo
+    expect(detail(ciclo)).toBe('[object Object]')
+  })
+  it('fmtError: mensagem, local e pilha', () => {
+    const e = new Error('boom')
+    e.stack = 'Error: boom\n  at a.js:1:1'
+    expect(fmtError({ message: 'boom', filename: 'a.js', lineno: 3, colno: 4, error: e })).toBe(
+      'erro não tratado: boom em a.js:3:4\nError: boom\n  at a.js:1:1',
+    )
+    expect(fmtError({ message: 'x', filename: 'b.js' })).toBe('erro não tratado: x em b.js:0:0')
+    expect(fmtError({ message: 'y', error: 'texto' })).toBe('erro não tratado: y')
+    const sem = new Error('z')
+    sem.stack = ''
+    expect(fmtError({ message: 'z', error: sem })).toBe('erro não tratado: z')
+  })
+  it('fmtReject e fmtVue', () => {
+    expect(fmtReject('nope')).toBe('promessa rejeitada: nope')
+    expect(fmtVue('x', 'render')).toBe('erro no componente (render): x')
   })
 })

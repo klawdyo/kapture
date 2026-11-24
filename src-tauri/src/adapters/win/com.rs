@@ -1,16 +1,27 @@
 //! Utilitários de COM/Media Foundation compartilhados pelos adaptadores.
 
 use std::sync::Once;
-use windows::core::PWSTR;
+use windows::core::{Error, PWSTR};
 use windows::Win32::Media::MediaFoundation::{MFStartup, MFSTARTUP_FULL, MF_VERSION};
 use windows::Win32::System::Com::{CoInitializeEx, CoTaskMemFree, COINIT_MULTITHREADED};
 
 thread_local! {
     /// Inicializa o COM (MTA) uma vez por thread que usa as APIs.
     static COM: () = {
-        // SAFETY: chamada padrão; "já inicializado" é ignorado de propósito.
-        let _ = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
+        // SAFETY: chamada padrão; "já inicializado" (S_FALSE) não é erro.
+        if let Err(e) = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) }.ok() {
+            log_err("CoInitializeEx", &e);
+        }
     };
+}
+
+/// Registra uma falha do Windows: contexto, HRESULT em hexadecimal e texto.
+pub fn log_err(ctx: &str, e: &Error) {
+    crate::logging::get().error(&format!(
+        "{ctx}: HRESULT {} ({})",
+        cap_core::log::hresult(e.code().0),
+        e.message().trim()
+    ));
 }
 
 /// Garante COM inicializado na thread atual.
@@ -24,7 +35,9 @@ pub fn mf_init() {
     init();
     MF.call_once(|| {
         // SAFETY: inicialização global do Media Foundation.
-        let _ = unsafe { MFStartup(MF_VERSION, MFSTARTUP_FULL) };
+        if let Err(e) = unsafe { MFStartup(MF_VERSION, MFSTARTUP_FULL) } {
+            log_err("MFStartup", &e);
+        }
     });
 }
 

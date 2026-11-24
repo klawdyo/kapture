@@ -3,11 +3,12 @@
 
 mod adapters;
 mod commands;
+mod logging;
 
 use adapters::{TauriCam, TauriEvents, TauriPicker};
-use cap_core::app::{CamCtl, Lister, MicMeter, Recorder, RegionPick};
+use cap_core::app::{CamCtl, Lister, LoggedEnc, MicMeter, Recorder, RegionPick};
 use cap_core::media::PickChan;
-use cap_core::ports::{Capture, Clock, Devs, Encoder, Fs, Targets};
+use cap_core::ports::{Capture, Clock, Devs, Encoder, Fs, Log, Targets};
 use commands::Core;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
@@ -59,23 +60,28 @@ fn plat() -> Plat {
 /// Monta o grafo de objetos.
 fn wire(app: AppHandle) -> Arc<Core> {
     let p = plat();
+    let log: Arc<dyn Log> = logging::get();
     let events = Arc::new(TauriEvents::new(app.clone()));
     let chan = Arc::new(PickChan::new());
     let picker = Arc::new(TauriPicker::new(app.clone(), chan.clone()));
     let cam = Arc::new(TauriCam::new(app));
+    // O encoder passa por um decorador que registra o progresso e as falhas.
+    let enc = Arc::new(LoggedEnc::new(p.enc, log.clone(), p.clock.clone()));
     Arc::new(Core {
         rec: Arc::new(Recorder::new(
             p.cap.clone(),
-            p.enc,
+            enc,
             p.clock,
             p.fs,
             events.clone(),
+            log.clone(),
         )),
-        lister: Lister::new(p.targets, p.devs),
-        cam: CamCtl::new(cam),
-        pick: RegionPick::new(picker),
-        meter: MicMeter::new(p.cap, events),
+        lister: Lister::new(p.targets, p.devs, log.clone()),
+        cam: CamCtl::new(cam, log.clone()),
+        pick: RegionPick::new(picker, log.clone()),
+        meter: MicMeter::new(p.cap, events, log.clone()),
         chan,
+        log,
     })
 }
 
@@ -94,6 +100,9 @@ fn place_toolbar(app: &AppHandle) {
 
 /// Ponto de entrada do app.
 pub fn run() {
+    // Primeiro o log: assim qualquer falha de inicialização fica registrada.
+    logging::install_panic_hook();
+    logging::log_start();
     tauri::Builder::default()
         .setup(|app| {
             let core = wire(app.handle().clone());
@@ -107,6 +116,7 @@ pub fn run() {
             place_toolbar(app.handle());
             #[cfg(windows)]
             adapters::win::hotkey::spawn(app.handle().clone());
+            logging::get().info("app pronto (janela da barra criada)");
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -122,7 +132,10 @@ pub fn run() {
             commands::get_state,
             commands::mic_start,
             commands::mic_stop,
+            commands::log_ui,
+            commands::open_logs,
         ])
         .run(tauri::generate_context!())
         .expect("falha ao iniciar o Cap");
+    logging::get().info("Cap encerrado normalmente");
 }

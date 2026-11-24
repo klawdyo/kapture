@@ -1,7 +1,7 @@
 // Implementação FAKE das portas, para testes (sem Tauri nem câmera).
 import { pickCam, type VideoDev } from '../domain/cam'
 import type { Devices, RecCfg, RecState, Region, Targets } from '../domain/types'
-import type { Backend, Media, Off } from './types'
+import type { Backend, LogLvl, Media, Off } from './types'
 
 /** Assinaturas de evento suportadas. */
 interface Ev {
@@ -58,6 +58,8 @@ export class FakeBackend implements Backend {
   async state() { await this.c('state'); return this.st }
   async micStart(micId: string) { await this.c('micStart', micId) }
   async micStop() { await this.c('micStop') }
+  async logUi(lvl: LogLvl, msg: string) { await this.c('logUi', { lvl, msg }) }
+  async openLogs() { await this.c('openLogs') }
   async fitSquare(size: number) { await this.c('fitSquare', size) }
   onMic(cb: (l: number) => void) { return this.on('mic', cb) }
   onState(cb: (s: RecState) => void) { return this.on('state', cb) }

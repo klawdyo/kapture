@@ -36,6 +36,7 @@ onBeforeUnmount(t.dispose)
       <template v-if="t.cfg">
         <Btn icon="sys" :on="t.sys" title="Áudio do sistema" @click="t.toggleSys()" />
         <Select v-model="t.fps" :options="FPS" title="Quadros por segundo" />
+        <Btn title="Abrir pasta de logs" @click="t.openLogs()">Abrir logs</Btn>
       </template>
       <RecBtn :rec="false" @click="t.toggle()" />
       <Btn round icon="gear" :on="t.cfg" title="Configurações" @click="t.toggleCfg()" />

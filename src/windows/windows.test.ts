@@ -29,6 +29,10 @@ describe('ToolbarApp', () => {
     // painel de configurações
     await w.find('button[title="Configurações"]').trigger('click')
     await w.find('button[title="Áudio do sistema"]').trigger('click')
+    const logs = w.find('button[title="Abrir pasta de logs"]')
+    expect(logs.text()).toBe('Abrir logs')
+    await logs.trigger('click')
+    expect(b.calls.some((c) => c[0] === 'openLogs')).toBe(true)
     await w.find('select[title], label[title="Quadros por segundo"] select').setValue('60')
     // alvo, câmera e mic
     await w.findAll('select')[0].setValue('1')

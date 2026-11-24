@@ -1,5 +1,6 @@
 // Lógica da janela da webcam: abre o stream e mantém o quadro 1:1.
 import { shallowRef, ref } from 'vue'
+import { detail } from '../domain/err'
 import { fit } from '../domain/size'
 import { ports } from '../ports'
 import type { Off } from '../ports/types'
@@ -15,8 +16,10 @@ export function useWebcam() {
     const dev = new URLSearchParams(location.search).get('dev') ?? undefined
     try {
       stream.value = await media.openCam(dev)
-    } catch {
+    } catch (e) {
       err.value = 'Não foi possível abrir a câmera'
+      // A causa real (ex.: NotAllowedError) só aparece no log.
+      b.logUi('error', `[webcam] getUserMedia falhou (dev=${dev ?? 'padrão'}): ${detail(e)}`).catch(() => {})
     }
     off = await b.onResize((w, h) => {
       const s = fit(w, h)

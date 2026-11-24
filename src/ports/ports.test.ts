@@ -32,6 +32,8 @@ describe('FakeBackend', () => {
     expect(await f.pickRegion()).toBeNull()
     await f.submitRegion(null)
     await f.fitSquare(300)
+    await f.logUi('warn', 'm')
+    await f.openLogs()
     await f.start({ mode: 'screen', sys: true, fps: 30 })
     expect((await f.state()).state).toBe('rec')
     await f.pause()
@@ -40,6 +42,8 @@ describe('FakeBackend', () => {
     expect(f.st.state).toBe('rec')
     expect(await f.stop()).toBe(f.path)
     expect(f.calls.map((c) => c[0])).toContain('fitSquare')
+    expect(f.calls).toContainEqual(['logUi', { lvl: 'warn', msg: 'm' }])
+    expect(f.calls.map((c) => c[0])).toContain('openLogs')
   })
   it('falha quando pedido', async () => {
     const f = new FakeBackend()
@@ -115,6 +119,26 @@ describe('realBackend', () => {
       ['pause_rec'], ['resume_rec'], ['stop_rec'], ['get_state'],
       ['mic_start', { micId: 'm1' }], ['mic_stop'],
     ])
+  })
+  it('envia mensagens ao log e abre a pasta de logs', async () => {
+    await realBackend.logUi('error', 'ruim')
+    await realBackend.openLogs()
+    expect(invoke.mock.calls).toEqual([['log_ui', { lvl: 'error', msg: 'ruim' }], ['open_logs']])
+  })
+  it('falha de comando vai para o log e o erro é repassado', async () => {
+    invoke.mockImplementation(async (cmd: string) => {
+      if (cmd === 'start_rec') throw 'Sem permissão'
+      return undefined
+    })
+    await expect(realBackend.start({ mode: 'screen', sys: true, fps: 30 })).rejects.toBe('Sem permissão')
+    await Promise.resolve()
+    expect(invoke).toHaveBeenLastCalledWith('log_ui', { lvl: 'error', msg: '[ipc] start_rec falhou: Sem permissão' })
+  })
+  it('falha ao gravar no log é descartada (sem laço)', async () => {
+    invoke.mockRejectedValue('tudo falha')
+    await expect(realBackend.stop()).rejects.toBe('tudo falha')
+    await expect(realBackend.logUi('info', 'x')).resolves.toBeUndefined()
+    expect(invoke.mock.calls.map((c) => c[0])).toEqual(['stop_rec', 'log_ui', 'log_ui'])
   })
   it('assina eventos entregando o payload', async () => {
     const got: unknown[] = []

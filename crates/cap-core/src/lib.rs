@@ -8,6 +8,8 @@ pub mod app;
 pub mod domain;
 pub mod error;
 pub mod fakes;
+pub mod log;
+pub mod logfile;
 pub mod media;
 pub mod ports;
 

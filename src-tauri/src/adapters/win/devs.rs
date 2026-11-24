@@ -4,7 +4,7 @@
 //! deviceIds próprios (hash) no `getUserMedia`, que não existem no
 //! Windows; a janela da webcam deve casar a câmera pelo `label`.
 
-use super::com::{mf_init, take_pwstr};
+use super::com::{log_err, mf_init, take_pwstr};
 use cap_core::domain::{Dev, Devices};
 use cap_core::ports::Devs;
 use cap_core::{CapErr, Res};
@@ -86,8 +86,14 @@ impl Devs for WinDevs {
     fn list(&self) -> Res<Devices> {
         mf_init();
         // Falha ao listar câmeras não impede listar microfones (e vice-versa).
-        let cams = cams().unwrap_or_default();
-        let mics = mics().map_err(|_| CapErr::from("Não foi possível listar os microfones."))?;
+        let cams = cams().unwrap_or_else(|e| {
+            log_err("listar câmeras (MFEnumDeviceSources)", &e);
+            Vec::new()
+        });
+        let mics = mics().map_err(|e| {
+            log_err("listar microfones (MMDevice)", &e);
+            CapErr::from("Não foi possível listar os microfones.")
+        })?;
         Ok(Devices { cams, mics })
     }
 }

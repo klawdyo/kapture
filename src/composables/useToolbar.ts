@@ -104,6 +104,9 @@ export function useToolbar() {
     return run(() => (id === '' ? b.micStop() : b.micStart(id)))
   }
 
+  /** Abre a pasta de logs no Explorer. */
+  const openLogs = (): Promise<void> => run(() => b.openLogs())
+
   const toggleSys = (): void => { sys.value = !sys.value }
   const toggleCfg = (): void => { cfg.value = !cfg.value }
 
@@ -129,6 +132,6 @@ export function useToolbar() {
   return {
     mode, cam, mic, tid, sys, fps, devs, level, rec, err, saved, cfg,
     active, paused, clock, opts, lvl,
-    init, dispose, start, stop, pause, toggle, setMode, setCam, toggleSys, toggleCfg, setMic,
+    init, dispose, start, stop, pause, toggle, setMode, setCam, toggleSys, toggleCfg, setMic, openLogs,
   }
 }
