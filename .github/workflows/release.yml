@@ -37,13 +37,18 @@ jobs:
           "version=$v" >> $env:GITHUB_OUTPUT
           "Versão: $v"
 
+      - name: Aplicar versão no tauri.conf.json
+        shell: pwsh
+        run: |
+          node -e "const f='src-tauri/tauri.conf.json';const c=JSON.parse(require('fs').readFileSync(f,'utf8'));c.version=process.argv[1];require('fs').writeFileSync(f,JSON.stringify(c,null,2))" "${{ steps.ver.outputs.version }}"
+
       - name: Gerar MSI (WiX)
         shell: pwsh
-        run: npx tauri build --bundles msi --config "{`"version`":`"${{ steps.ver.outputs.version }}`"}"
+        run: npx tauri build --bundles msi
 
       - name: Gerar exe para o MSIX
         shell: pwsh
-        run: npx tauri build --no-bundle --config "{`"version`":`"${{ steps.ver.outputs.version }}`"}"
+        run: npx tauri build --no-bundle
 
       - name: Gerar MSIX (MakeAppx)
         continue-on-error: true
