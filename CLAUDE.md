@@ -33,6 +33,7 @@ Gravador de tela leve para Windows (Tauri v2 + Vue 3 + Rust). Leia isto antes de
 - **Só envie ao remoto com algo pronto, funcionando e verificado localmente.** Nada de push parcial.
 - Fluxo: trabalho na `dev`, PR da `dev` para a `main`, o merge na `main` dispara o release. Push em `dev` não roda CI.
 - PR para `dev`: só Linux e site. PR para `main`: também Windows e o job `installer`. O release não repete os testes.
+- **PR da `dev` para a `main` (quando o dono pedir um release):** o título é a versão calculada, no formato `vX.Y.Z`, e o número tem de ser o **mesmo que o release vai calcular na `main`**. Faça `git fetch --tags origin` e rode `node scripts/release-pr.mjs`: ele parte da maior tag alcançável a partir da `origin/main` (e não do HEAD da `dev`, que pode não enxergar a última tag e daria uma versão errada). Use a saída assim: título = `TÍTULO`, corpo = as notas agrupadas, depois uma seção "Antes de mesclar" (o que dispara no merge e o que conferir) e, por último, todos os commits desde a tag. Nunca calcule a versão de cabeça nem pelo `node scripts/version.mjs next` rodado na `dev`.
 - Tipo de commit decide a versão (`feat` sobe o minor, `fix` o patch). Use `chore`, `style`, `refactor`, `docs`, `ci`, `test` quando não for funcionalidade.
 - Antes de abrir PR, rode: `cargo fmt --all --check`, `cargo clippy -p cap-core --all-targets -- -D warnings`, a cobertura do core, `npx vitest run --coverage`, `npx vue-tsc --noEmit`, `npm run build` e, em `site/`, `npm run generate`.
 

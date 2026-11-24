@@ -72,3 +72,7 @@ node scripts/version.mjs apply X.Y.Z     # grava a versão nos arquivos do proje
 ```
 
 O cálculo precisa do histórico completo e das tags (`git fetch --tags --unshallow`, ou `fetch-depth: 0` no CI).
+
+## Prévia da versão no PR da dev para a main
+
+O release calcula a versão na `main`, partindo da maior tag `vX.Y.Z` alcançável a partir dela. Na `dev` essa tag pode não ser visível (o commit de merge que a recebe só existe na `main`), então `node scripts/version.mjs next` rodado na `dev` pode dar outro número. Para o título do PR, rode `git fetch --tags origin` e `node scripts/release-pr.mjs`: ele usa o mesmo cálculo do release, partindo da `origin/main`, e imprime o título (`vX.Y.Z`), as notas e a lista de commits.
