@@ -136,6 +136,27 @@ pub fn logs_dir(base: Option<&str>, tmp: &str) -> String {
     join_win(&join_win(root, "kapture"), "logs")
 }
 
+/// Pastas de log em ordem de preferência: `<LocalAppData>\kapture\logs` (se a base existir) e,
+/// como reserva, `<temp>\kapture\logs`. Sem repetição.
+pub fn logs_dirs(base: Option<&str>, tmp: &str) -> Vec<String> {
+    let mut v = vec![logs_dir(base, tmp)];
+    let tmp_dir = logs_dir(None, tmp);
+    if !v.contains(&tmp_dir) {
+        v.push(tmp_dir);
+    }
+    v
+}
+
+/// Aviso gravado na primeira linha quando a pasta preferida não pôde ser usada.
+pub fn fallback_note(tried: &str, err: &str, using: &str) -> String {
+    format!("pasta de logs '{tried}' inutilizável ({err}); usando '{using}'")
+}
+
+/// Linha com o caminho completo do arquivo de log da sessão.
+pub fn log_path_line(dir: &str) -> String {
+    format!("arquivo de log: {}", join_win(dir, &file_name(0)))
+}
+
 /// Linha de abertura do app.
 pub fn start_line(ver: &str, os: &str, args: &[String]) -> String {
     format!("kapture {ver} iniciado; Windows {os}; args: {args:?}")
@@ -184,6 +205,13 @@ pub fn log_ipc<T, E: Display>(log: &dyn Log, name: &str, ms: u64, r: &Result<T, 
     match r {
         Ok(_) => log.info(&format!("ipc {name}: ok ({ms} ms)")),
         Err(e) => log.error(&format!("ipc {name}: erro: {e} ({ms} ms)")),
+    }
+}
+
+/// Registra só a falha de um comando IPC chamado com frequência (sem poluir o log com os `ok`).
+pub fn log_ipc_err<T, E: Display>(log: &dyn Log, name: &str, r: &Result<T, E>) {
+    if let Err(e) = r {
+        log.error(&format!("ipc {name}: erro: {e}"));
     }
 }
 
@@ -284,6 +312,37 @@ mod tests {
             "PANICO na thread 'main' em a.rs:3: boom\nbt"
         );
         assert!(panic_text("x", None, "t", "").contains("local desconhecido"));
+    }
+
+    #[test]
+    fn pastas_de_log_com_reserva() {
+        assert_eq!(
+            logs_dirs(Some("C:\\L"), "C:\\T"),
+            vec!["C:\\L\\kapture\\logs", "C:\\T\\kapture\\logs"]
+        );
+        // Sem a base, só a pasta temporária (sem repetir).
+        assert_eq!(logs_dirs(None, "C:\\T"), vec!["C:\\T\\kapture\\logs"]);
+        assert_eq!(logs_dirs(Some("C:\\T"), "C:\\T").len(), 1);
+        assert_eq!(
+            fallback_note("A", "negado", "B"),
+            "pasta de logs 'A' inutilizável (negado); usando 'B'"
+        );
+        assert_eq!(
+            log_path_line("C:\\L\\kapture\\logs"),
+            "arquivo de log: C:\\L\\kapture\\logs\\kapture.log"
+        );
+    }
+
+    #[test]
+    fn ipc_so_erro() {
+        let l = FakeLog::default();
+        log_ipc_err(&l, "fit_toolbar", &Ok::<(), String>(()));
+        assert!(l.all().is_empty());
+        log_ipc_err(&l, "fit_toolbar", &Err::<(), String>("sem janela".into()));
+        assert_eq!(
+            l.all(),
+            vec![(Lvl::Error, "ipc fit_toolbar: erro: sem janela".to_string())]
+        );
     }
 
     #[test]

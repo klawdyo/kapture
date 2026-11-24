@@ -68,7 +68,10 @@ Câmera: o `id` de `Dev` da câmera é o nome amigável; o deviceId do getUserMe
 ## Logs em disco
 Porta `Log` (`ports.rs`: `write(lvl, msg)` mais `debug/info/warn/error`), nunca falha nem bloqueia.
 - REAL: `cap_core::logfile::FileLog` (só `std`, sem `log`/`tracing`), grava e dá `flush` a cada linha em
-  `%LOCALAPPDATA%\kapture\logs\kapture.log` (SHGetKnownFolderPath, depois a env `LOCALAPPDATA`, depois a pasta temporária).
+  `%LOCALAPPDATA%\kapture\logs\kapture.log` (env `LOCALAPPDATA`, sem COM; `FileLog::first_usable` testa criar a pasta e abrir o
+  arquivo e, se falhar, cai para `<temp>\kapture\logs`). A primeira linha da sessão traz a versão; a segunda, o caminho completo
+  do arquivo (`arquivo de log: ...`); se a pasta preferida falhou, uma linha WARN diz qual e por quê. `open_logs` abre a pasta
+  REALMENTE usada. Todo erro de comando IPC vai ao log com o nome do comando (`ipc <nome>: erro: ...`); `fit_toolbar` só registra falhas.
 - FAKE: `fakes::FakeLog` (guarda `(Lvl, String)`; `msgs()`, `has()`).
 - Lógica pura em `cap_core::log` (100% de cobertura): linha `2026-01-02T03:04:05.678Z INFO  mensagem` (UTC, nível com 5
   colunas, quebras de linha viram continuação indentada), mensagens truncadas em 4000 bytes, rotação por tamanho

@@ -192,12 +192,21 @@ impl Capture for WinCapture {
         }
         let clk = Clk::new();
         let vid = start_video(cfg, clk.clone(), sink.clone())?;
+        logging::get().info("captura: vídeo iniciado");
         // Falha de áudio não derruba o vídeo: vira aviso.
         let (aud, warns) = if has_audio(cfg) {
             start_audio(cfg, clk.clone(), sink)
         } else {
             (None, Vec::new())
         };
+        logging::get().info(&format!(
+            "captura: áudio {}",
+            if aud.is_some() {
+                "iniciado"
+            } else {
+                "desligado"
+            }
+        ));
         *g = Some(Sess { clk, vid, aud });
         Ok(warns)
     }

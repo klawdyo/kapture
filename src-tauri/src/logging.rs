@@ -4,37 +4,60 @@
 //! baixo nível (callbacks do Windows, thread do atalho) e o panic hook
 //! não têm como receber dependências, então usam este acesso global.
 
-use cap_core::log::{panic_text, payload_str, start_line};
+use cap_core::log::{log_path_line, panic_text, payload_str, start_line};
 use cap_core::logfile::FileLog;
 use cap_core::ports::Log;
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
 
-static LOG: OnceLock<Arc<dyn Log>> = OnceLock::new();
+/// Log do processo, a pasta realmente usada e as notas de escolha da pasta.
+struct Global {
+    log: Arc<dyn Log>,
+    dir: PathBuf,
+    notes: Vec<String>,
+}
 
-/// Pasta de logs: `%LOCALAPPDATA%\kapture\logs` (ou a pasta temporária).
-pub fn dir() -> PathBuf {
+static LOG: OnceLock<Global> = OnceLock::new();
+
+/// Pastas candidatas em ordem de preferência. Sem COM aqui: este código roda dentro da criação do
+/// log, e uma chamada de COM que falhasse tentaria registrar no log ainda inexistente (deadlock).
+/// `LOCALAPPDATA` vem sempre definida em processos de usuário; a pasta temporária é a reserva.
+fn candidates() -> Vec<PathBuf> {
     #[cfg(windows)]
     {
-        use crate::adapters::win::local_app_data;
-        // Sem COM na partida: a variável de ambiente vem primeiro; o shell (COM) só como reserva.
-        let base = std::env::var("LOCALAPPDATA").ok().or_else(local_app_data);
+        let base = std::env::var("LOCALAPPDATA").ok();
         let tmp = std::env::temp_dir();
-        PathBuf::from(cap_core::log::logs_dir(
-            base.as_deref(),
-            &tmp.to_string_lossy(),
-        ))
+        cap_core::log::logs_dirs(base.as_deref(), &tmp.to_string_lossy())
+            .into_iter()
+            .map(PathBuf::from)
+            .collect()
     }
     // Outros SOs (só desenvolvimento da interface).
     #[cfg(not(windows))]
     {
-        std::env::temp_dir().join("kapture").join("logs")
+        vec![std::env::temp_dir().join("kapture").join("logs")]
     }
+}
+
+fn global() -> &'static Global {
+    LOG.get_or_init(|| {
+        let (log, notes) = FileLog::first_usable(&candidates());
+        Global {
+            dir: log.dir().to_path_buf(),
+            log: Arc::new(log),
+            notes,
+        }
+    })
+}
+
+/// Pasta de logs REALMENTE usada (a preferida ou, se ela falhou, a reserva).
+pub fn dir() -> PathBuf {
+    global().dir.clone()
 }
 
 /// Log do processo (criado na primeira chamada).
 pub fn get() -> Arc<dyn Log> {
-    LOG.get_or_init(|| Arc::new(FileLog::new(&dir()))).clone()
+    global().log.clone()
 }
 
 /// Instala o panic hook. O release usa `panic = "abort"`, então a
@@ -68,7 +91,11 @@ pub fn log_start() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let os = os_version();
     get().info(&start_line(env!("CARGO_PKG_VERSION"), &os, &args));
-    get().info(&format!("pasta de logs: {}", dir().display()));
+    // Caminho completo do arquivo e, se a pasta preferida falhou, o motivo da troca.
+    get().info(&log_path_line(&dir().to_string_lossy()));
+    for n in &global().notes {
+        get().warn(n);
+    }
 }
 
 /// Versão do Windows (`maior.menor.build`).

@@ -100,7 +100,11 @@ impl Recorder {
         };
         self.fs.ensure_dir(&dir)?;
         let path = self.fs.join(&dir, &file_name(&self.clock.now()));
-        self.enc.open(&path, cfg)?;
+        self.enc.open(&path, cfg).inspect_err(|e| {
+            self.log
+                .error(&format!("encoder: falha ao abrir {path}: {e}"));
+        })?;
+        self.log.info(&format!("encoder: arquivo aberto em {path}"));
         let warns = match self.cap.start(cfg, self.enc.clone()) {
             Ok(w) => w,
             Err(e) => {
@@ -117,6 +121,7 @@ impl Recorder {
         for w in &warns {
             self.log.warn(&format!("captura: aviso ao usuário: {w}"));
         }
+        self.log.info("captura: vídeo e áudio iniciados");
         *i = Inner {
             st: St::Rec,
             since: self.clock.mono_ms(),
@@ -375,12 +380,17 @@ mod tests {
         assert!(m[0].starts_with("gravação: iniciar (modo=Screen"));
         assert_eq!(
             m[1],
+            "encoder: arquivo aberto em /videos/kapture-20260102-030405.mp4"
+        );
+        assert_eq!(m[2], "captura: vídeo e áudio iniciados");
+        assert_eq!(
+            m[3],
             "gravação: iniciada em /videos/kapture-20260102-030405.mp4"
         );
-        assert_eq!(m[2], "gravação: pausada em 2 s");
-        assert_eq!(m[3], "gravação: retomada");
+        assert_eq!(m[4], "gravação: pausada em 2 s");
+        assert_eq!(m[5], "gravação: retomada");
         assert_eq!(
-            m[4],
+            m[6],
             "gravação: finalizada (2 s) em /videos/kapture-20260102-030405.mp4"
         );
     }
@@ -392,6 +402,16 @@ mod tests {
         assert_eq!(k.rec.start(&cfg()).unwrap(), vec!["sem microfone"]);
         assert!(k.log.has("captura: aviso ao usuário: sem microfone"));
         assert_eq!(k.rec.state().state, St::Rec);
+    }
+
+    #[test]
+    fn falha_ao_abrir_o_encoder_vai_ao_log() {
+        let k = kit();
+        k.enc.fail.set("open", "sem disco");
+        assert!(k.rec.start(&cfg()).is_err());
+        assert!(k
+            .log
+            .has("encoder: falha ao abrir /videos/kapture-20260102-030405.mp4: sem disco"));
     }
 
     #[test]

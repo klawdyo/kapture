@@ -3,7 +3,9 @@
 //! e descarregada (`flush`) na hora, para sobreviver a um aborto.
 
 use crate::lk;
-use crate::log::{file_name, line, needs_rotation, rotation, Lvl, Step, KEEP, MAX_BYTES};
+use crate::log::{
+    fallback_note, file_name, line, needs_rotation, rotation, Lvl, Step, KEEP, MAX_BYTES,
+};
 use crate::ports::Log;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -27,6 +29,17 @@ pub struct FileLog {
     keep: usize,
     now: Now,
     st: Mutex<Open>,
+}
+
+/// Testa se `dir` serve: cria a pasta e abre o arquivo ativo para anexar.
+fn probe(dir: &Path) -> Result<(), String> {
+    std::fs::create_dir_all(dir).map_err(|e| format!("criar a pasta: {e}"))?;
+    OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(dir.join(file_name(0)))
+        .map(|_| ())
+        .map_err(|e| format!("abrir o arquivo: {e}"))
 }
 
 /// Relógio do sistema em ms desde 1970 (UTC).
@@ -54,6 +67,49 @@ impl FileLog {
                 size: 0,
             }),
         }
+    }
+
+    /// Escolhe a primeira pasta onde o arquivo pode ser criado e aberto para anexar e devolve o
+    /// log nela, mais as notas de cada pasta descartada (para a primeira linha da sessão).
+    /// Se nenhuma servir, usa a última (o log fica mudo) e a nota diz isso.
+    pub fn first_usable(cands: &[PathBuf]) -> (FileLog, Vec<String>) {
+        let mut notes = Vec::new();
+        let mut failed: Option<(&PathBuf, String)> = None;
+        for d in cands {
+            match probe(d) {
+                Ok(()) => {
+                    if let Some((t, e)) = failed {
+                        notes.push(fallback_note(
+                            &t.display().to_string(),
+                            &e,
+                            &d.display().to_string(),
+                        ));
+                    }
+                    return (FileLog::new(d), notes);
+                }
+                Err(e) => {
+                    if let Some((t, e0)) = failed.take() {
+                        notes.push(fallback_note(
+                            &t.display().to_string(),
+                            &e0,
+                            &d.display().to_string(),
+                        ));
+                    }
+                    failed = Some((d, e));
+                }
+            }
+        }
+        let last = cands.last().cloned().unwrap_or_default();
+        notes.push(format!(
+            "nenhuma pasta de log pôde ser usada (última: '{}'); o log em disco está desligado",
+            last.display()
+        ));
+        (FileLog::new(&last), notes)
+    }
+
+    /// Pasta onde o log grava.
+    pub fn dir(&self) -> &Path {
+        &self.dir
     }
 
     /// Caminho do arquivo de índice `i` (0 = ativo).
@@ -199,6 +255,44 @@ mod tests {
         l.error("perdida");
         assert_eq!(fs::read_to_string(l.path(0)).unwrap(), antes);
         assert_eq!(lk(&l.st).size, size);
+        let _ = fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn escolhe_a_primeira_pasta_utilizavel() {
+        let d = tmp("escolha");
+        fs::create_dir_all(&d).unwrap();
+        let ruim = d.join("arquivo");
+        fs::write(&ruim, "x").unwrap();
+        let boa = d.join("boa");
+        // A primeira serve: sem notas.
+        let (l, n) = FileLog::first_usable(&[boa.clone(), ruim.clone()]);
+        assert!(n.is_empty());
+        assert_eq!(l.dir(), boa.as_path());
+        // A primeira falha (é um arquivo): usa a segunda e explica.
+        let (l, n) = FileLog::first_usable(&[ruim.clone(), boa.clone()]);
+        assert_eq!(l.dir(), boa.as_path());
+        assert_eq!(n.len(), 1);
+        assert!(n[0].contains("inutilizável") && n[0].contains("usando"));
+        // Duas falhas e depois uma boa: uma nota por pasta descartada.
+        let ruim2 = ruim.join("sub");
+        let (l, n) = FileLog::first_usable(&[ruim.clone(), ruim2.clone(), boa.clone()]);
+        assert_eq!(l.dir(), boa.as_path());
+        assert_eq!(n.len(), 2);
+        // Nenhuma serve: usa a última, muda, e diz isso.
+        let (l, n) = FileLog::first_usable(&[ruim.clone(), ruim2.clone()]);
+        assert_eq!(l.dir(), ruim2.as_path());
+        assert!(n.last().unwrap().contains("desligado"));
+        l.error("ninguém ouve");
+        // Pasta existe, mas o arquivo não abre (há uma pasta com o nome do log).
+        let trava = d.join("trava");
+        fs::create_dir_all(trava.join("kapture.log")).unwrap();
+        let (l, n) = FileLog::first_usable(&[trava.clone(), boa.clone()]);
+        assert_eq!(l.dir(), boa.as_path());
+        assert!(n[0].contains("abrir o arquivo"));
+        // Lista vazia também não derruba.
+        let (_, n) = FileLog::first_usable(&[]);
+        assert_eq!(n.len(), 1);
         let _ = fs::remove_dir_all(&d);
     }
 
