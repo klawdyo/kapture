@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  linux:
+    name: Linux (núcleo e front-end)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy, llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+      - name: Formatação
+        run: cargo fmt --all -- --check
+      - name: Clippy do núcleo
+        run: cargo clippy -p cap-core --all-targets -- -D warnings
+      - name: Cobertura do cap-core (100% das linhas)
+        run: cargo llvm-cov -p cap-core --fail-under-lines 100
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npx vue-tsc --noEmit
+      - name: Vitest com cobertura 100%
+        run: >
+          npx vitest run --coverage
+          --coverage.thresholds.lines=100
+          --coverage.thresholds.functions=100
+          --coverage.thresholds.branches=100
+          --coverage.thresholds.statements=100
+
+  windows:
+    name: Windows (workspace e Tauri)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Testes do workspace inteiro
+        run: cargo test --workspace
+      - name: Check do src-tauri
+        run: cargo check --manifest-path src-tauri/Cargo.toml
+
+  # Gera o MSI de verdade para validar a build e medir o tamanho (não roda no release, que já gera o seu)
+  msi:
+    name: MSI (build de verificação)
+    if: github.event_name != 'workflow_call'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Gerar MSI
+        run: npx tauri build --bundles msi
+      - name: Tamanho do instalador
+        shell: pwsh
+        run: |
+          Get-ChildItem target/release/bundle/msi/*.msi | ForEach-Object {
+            "{0}: {1:N2} MB" -f $_.Name, ($_.Length / 1MB)
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: msi-teste
+          path: target/release/bundle/msi/*.msi

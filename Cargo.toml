@@ -1,0 +1,11 @@
+# Workspace do Cap: núcleo em Rust puro + adaptadores Tauri/Windows
+[workspace]
+resolver = "2"
+members = ["crates/cap-core","src-tauri"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

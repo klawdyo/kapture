@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cap, gravador de tela minimalista para Windows</title>
+<meta name="description" content="Cap grava tela, janela ou área, com webcam e microfone, em um instalador de poucos MB. Atalho Ctrl+Shift+R e encoder nativo do Windows.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#141517" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f4f2" media="(prefers-color-scheme: light)">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="Cap, gravador de tela minimalista para Windows">
+<meta property="og:description" content="Grave tela, janela ou área em poucos cliques. Leve, sem FFmpeg, com atalho Ctrl+Shift+R.">
+<meta property="og:url" content="https://klawdyo.github.io/kapture/">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%233a3d44'/%3E%3Ccircle cx='50' cy='50' r='13' fill='%23ef4444'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="shutter" viewBox="0 0 100 100">
+    <g class="blade">
+      <path d="M50 4 L92 30 L64 50 L50 36 Z"/>
+      <path d="M96 50 L70 92 L50 64 L64 50 Z"/>
+      <path d="M50 96 L8 70 L36 50 L50 64 Z"/>
+      <path d="M4 50 L30 8 L50 36 L36 50 Z"/>
+    </g>
+    <circle class="dot" cx="50" cy="50" r="9"/>
+  </symbol>
+</svg>
+<a class="skip" href="#main">Pular para o conteúdo</a>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#" aria-label="Cap, início"><svg aria-hidden="true"><use href="#shutter"/></svg>Cap</a>
+    <nav aria-label="Principal">
+      <ul>
+        <li><a href="#recursos">Recursos</a></li>
+        <li><a href="#leve">Por que é leve</a></li>
+        <li><a href="#instalacao">Instalação</a></li>
+      </ul>
+    </nav>
+  </header>
+</div>
+<main id="main">
+  <div class="wrap hero">
+    <div>
+      <h1>Grave a tela. Só isso.</h1>
+      <p class="lead">Cap é um gravador de tela minimalista para Windows. Instalador de poucos MB, sem janelas demais, com uma pílula discreta no canto da tela.</p>
+      <div class="cta">
+        <a class="btn" href="https://github.com/klawdyo/kapture/releases/latest"><i aria-hidden="true"></i>Baixar MSI</a>
+        <span class="meta">Windows 10 e 11 · gratuito</span>
+      </div>
+    </div>
+    <div class="stage" aria-hidden="true">
+      <div class="shutter"><svg><use href="#shutter"/></svg></div>
+      <div class="pill"><span class="rec"></span>00:42<span class="sep"></span><span class="stop"></span></div>
+    </div>
+  </div>
+
+  <section id="recursos" aria-labelledby="t-rec">
+    <div class="wrap">
+      <h2 id="t-rec">Tudo o que você precisa, nada além</h2>
+      <ul class="grid">
+        <li class="card"><span class="tag" aria-hidden="true">01</span><h3>Tela, janela ou área</h3><p>Escolha o que gravar: o monitor inteiro, uma janela específica ou um retângulo desenhado por você.</p></li>
+        <li class="card"><span class="tag" aria-hidden="true">02</span><h3>Webcam arrastável 1:1</h3><p>Uma bolha quadrada com sua câmera, que você posiciona onde quiser sobre a gravação.</p></li>
+        <li class="card"><span class="tag" aria-hidden="true">03</span><h3>Microfone com medidor</h3><p>Veja o nível do áudio em tempo real antes e durante a gravação.</p></li>
+        <li class="card"><span class="tag" aria-hidden="true">04</span><h3>Atalho <kbd>Ctrl+Shift+R</kbd></h3><p>Inicie e pare a gravação de qualquer lugar, sem tirar as mãos do teclado.</p></li>
+        <li class="card"><span class="tag" aria-hidden="true">05</span><h3>Leve de verdade</h3><p>Instalador de poucos MB e consumo baixo de memória e CPU enquanto grava.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="leve" aria-labelledby="t-leve">
+    <div class="wrap two">
+      <h2 id="t-leve">Por que é leve</h2>
+      <div>
+        <p>Cap usa o encoder nativo do Windows (Media Foundation) para gerar o vídeo. Não embute FFmpeg nem outros binários pesados, e a interface é feita com Tauri, que reaproveita o WebView do sistema.</p>
+        <p>O resultado é um instalador pequeno, abertura instantânea e gravações que não disputam recursos com o que você está mostrando.</p>
+        <ul class="stats"><li>Poucos MB</li><li>Sem FFmpeg</li><li>Encoder nativo</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="instalacao" aria-labelledby="t-inst">
+    <div class="wrap">
+      <h2 id="t-inst">Instalação</h2>
+      <ol class="steps">
+        <li>Baixe o arquivo <code>.msi</code> na <a href="https://github.com/klawdyo/kapture/releases/latest">página de releases</a>.</li>
+        <li>Abra o instalador e conclua o assistente.</li>
+        <li>Pressione <kbd>Ctrl+Shift+R</kbd> para começar a gravar.</li>
+      </ol>
+      <p class="note"><strong>Aviso do SmartScreen.</strong> O MSI ainda não é assinado digitalmente, então o Windows pode exibir &ldquo;O Windows protegeu o seu computador&rdquo;. Clique em <em>Mais informações</em> e depois em <em>Executar assim mesmo</em>. O código-fonte está aberto para você conferir.</p>
+    </div>
+  </section>
+</main>
+<footer>
+  <div class="wrap">
+    <span>Licença MIT · Cláudio Medeiros</span>
+    <a href="https://github.com/klawdyo/kapture">Repositório no GitHub</a>
+  </div>
+</footer>
+</body>
+</html>

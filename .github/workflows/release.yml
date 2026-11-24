@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  tests:
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: Instaladores (MSI e MSIX)
+    needs: tests
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Versão a partir da tag
+        id: ver
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -like 'refs/tags/v*') {
+            $v = $env:GITHUB_REF_NAME.TrimStart('v')
+          } else {
+            $v = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "Versão: $v"
+
+      - name: Gerar MSI (WiX)
+        shell: pwsh
+        run: npx tauri build --bundles msi --config "{`"version`":`"${{ steps.ver.outputs.version }}`"}"
+
+      - name: Gerar exe para o MSIX
+        shell: pwsh
+        run: npx tauri build --no-bundle --config "{`"version`":`"${{ steps.ver.outputs.version }}`"}"
+
+      - name: Gerar MSIX (MakeAppx)
+        continue-on-error: true
+        shell: pwsh
+        run: >
+          ./packaging/msix/build-msix.ps1
+          -Version "${{ steps.ver.outputs.version }}"
+          -Exe (Get-ChildItem target/release/*.exe | Select-Object -First 1).FullName
+          -Out dist/Cap-${{ steps.ver.outputs.version }}-x64.msix
+
+      - name: Reunir artefatos, tamanhos e SHA256
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Get-ChildItem target/release/bundle/msi/*.msi | Copy-Item -Destination dist
+          Get-ChildItem dist | ForEach-Object {
+            "{0}: {1:N2} MB" -f $_.Name, ($_.Length / 1MB)
+          }
+          Get-ChildItem dist -File | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          } | Set-Content dist/SHA256SUMS -Encoding ascii
+          Get-Content dist/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: instaladores
+          path: dist/*
+
+      - name: Publicar no GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.msi
+            dist/*.msix
+            dist/SHA256SUMS
+          generate_release_notes: true
