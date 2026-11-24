@@ -37,3 +37,11 @@ Gravador de tela leve para Windows (Tauri v2 + Vue 3 + Rust). Leia isto antes de
 ## O que nunca foi validado em Windows real
 
 Captura, microfone, webcam, gravação em MP4, mica, sombra, `fit_toolbar`, atalho global, atualização pelo Velopack, CSP e CORS da verificação de atualização. Não afirme que funcionam sem teste numa máquina Windows.
+
+## Pendências pedidas pelo dono (ainda não implementadas)
+
+1. **Seletor de área, proporção:** opções abaixo do retângulo para travar a proporção: 16:9, 4:3, 3:4, 9:16 ou livre. Com uma proporção fixa, redimensionar mantém a proporção (lógica pura em `src/domain/rect.ts`, com testes).
+2. **Seletor de área, indicador de tamanho:** manter o formato parecido com a etiqueta atual de dimensões (ex.: 1280 × 720), mas com pequenas diferenças visuais entre a **etiqueta informativa** e os **botões de proporção**, para ninguém confundir badge com botão.
+3. **Webcam:** simplificar para um **círculo com borda branca fina** (sem moldura chanfrada nem marcas). Com o mouse em cima, a **roda do mouse** aumenta ou diminui o tamanho, inclusive durante a gravação. Manter 1:1 e os limites mínimo e máximo de `cam_side`.
+4. **Instalador:** decisão em aberto (Velopack 11,7 MB contra MSI 1,8 MB). Não mude o instalador nem o release sem o dono pedir.
+5. **Regras de envio:** **não envie ao remoto nem abra PR sem o dono mandar.**
