@@ -48,7 +48,7 @@ pub fn bgra_to_nv12(src: &[u8], w: u32, h: u32) -> Vec<u8> {
     let mut out = vec![0u8; w * h * 3 / 2];
     let (yp, uv) = out.split_at_mut(w * h);
     // Luma de cada pixel.
-    for (i, px) in src.chunks_exact(4).take(w * h).enumerate() {
+    for (i, px) in src.as_chunks::<4>().0.iter().take(w * h).enumerate() {
         let (b, g, r) = (px[0] as i32, px[1] as i32, px[2] as i32);
         yp[i] = (((47 * r + 157 * g + 16 * b + 128) >> 8) + 16) as u8;
     }
@@ -82,7 +82,7 @@ pub fn fit_bgra(src: &[u8], sw: u32, sh: u32, dw: u32, dh: u32) -> Vec<u8> {
         out[d..d + cw].copy_from_slice(&src[s..s + cw]);
     }
     // Alfa opaco nos pixels pretos de preenchimento.
-    for px in out.chunks_exact_mut(4) {
+    for px in out.as_chunks_mut::<4>().0.iter_mut() {
         px[3] = 255;
     }
     out
@@ -253,11 +253,11 @@ mod tests {
         assert_eq!(o.len(), 4 * 4 * 3 / 2);
         // Dois blocos horizontais distintos geram dois pares UV.
         let mut src = vec![0u8; 4 * 2 * 4];
-        for px in src.chunks_exact_mut(4).skip(2).take(2) {
+        for px in src.as_chunks_mut::<4>().0.iter_mut().skip(2).take(2) {
             px.copy_from_slice(&[255, 255, 255, 255]);
         }
         // Linha 2 (y=1) também: blocos 2x2 inteiros brancos no 2º bloco.
-        for px in src.chunks_exact_mut(4).skip(6).take(2) {
+        for px in src.as_chunks_mut::<4>().0.iter_mut().skip(6).take(2) {
             px.copy_from_slice(&[255, 255, 255, 255]);
         }
         let o = bgra_to_nv12(&src, 4, 2);
