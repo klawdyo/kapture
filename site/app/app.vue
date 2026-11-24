@@ -6,6 +6,7 @@ const description = 'Grave tela, janela ou área, com webcam e microfone, em um 
 const ogImage = `${base}/og.png`
 
 useHead({
+  link: [{ rel: 'icon', type: 'image/png', href: `${config.app.baseURL}favicon.png` }],
   meta: [
     { name: 'theme-color', content: '#fafafa', media: '(prefers-color-scheme: light)' },
     { name: 'theme-color', content: '#09090b', media: '(prefers-color-scheme: dark)' }

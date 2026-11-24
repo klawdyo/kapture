@@ -9,7 +9,7 @@ const config = useRuntimeConfig()
     </template>
     <template #right>
       <a class="link text-sm text-muted hover:text-highlighted inline-flex items-center min-h-11" :href="config.public.repoUrl" rel="noopener">
-        Repositório no GitHub (privado)
+        Repositório no GitHub
       </a>
     </template>
   </UFooter>

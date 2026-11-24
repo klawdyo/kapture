@@ -4,6 +4,8 @@ Gravador de tela leve para Windows. Grava a tela inteira, uma janela ou uma áre
 
 ![Logo do Cap](assets/logo-light.png)
 
+Site: https://klawdyo.github.io/kapture/ | Download: [última versão](https://github.com/klawdyo/kapture/releases/latest)
+
 ## Como usar
 
 1. Abra o Cap. A barra flutuante aparece no topo da tela.

@@ -14,10 +14,20 @@ Para mudar o valor, é preciso gerar o site de novo.
 | `NUXT_PUBLIC_DOWNLOAD_URL` | `https://github.com/klawdyo/kapture/releases/latest` | Destino dos botões "Baixar MSI" |
 | `NUXT_PUBLIC_SITE_URL` | vazio | URL pública do site, usada em `og:url` e `og:image` |
 
-**Atenção:** o repositório `klawdyo/kapture` é **privado**. O link padrão de releases só abre
-para quem tem acesso e dá 404 para o público. Aponte `NUXT_PUBLIC_DOWNLOAD_URL` para uma URL
-acessível (por exemplo, o `.msi` hospedado na própria VPS ou em um armazenamento público).
-O link "Repositório no GitHub" no rodapé também leva a um repositório privado.
+O repositório `klawdyo/kapture` é **público**, então o link padrão leva direto ao último
+release, onde qualquer pessoa pode baixar o `.msi`.
+
+## GitHub Pages
+
+O site é publicado em https://klawdyo.github.io/kapture/ pelo workflow `.github/workflows/pages.yml`,
+que roda a cada mudança em `site/` na `main`. Ele define `NUXT_APP_BASE_URL=/kapture/`, porque a
+página de projeto fica sob o prefixo `/kapture/`.
+
+Ativação, uma única vez: em **Settings > Pages**, em **Build and deployment**, escolha
+**Source: GitHub Actions**. Deixe "Custom domain" vazio para usar o domínio `github.io`.
+
+Para hospedar na raiz de um domínio (por exemplo, com o Docker abaixo), não defina
+`NUXT_APP_BASE_URL`: o padrão é `/`.
 
 ## Desenvolvimento
 

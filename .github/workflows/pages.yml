@@ -1,0 +1,47 @@
+name: Pages
+
+# Publica o site (Nuxt) em https://klawdyo.github.io/kapture/ a cada mudança em site/ na main
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      # O site fica em /kapture/ (página de projeto do GitHub Pages)
+      NUXT_APP_BASE_URL: /kapture/
+      NUXT_PUBLIC_SITE_URL: https://klawdyo.github.io/kapture
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+        working-directory: site
+      - run: npm run generate
+        working-directory: site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/.output/public
+      - id: deployment
+        uses: actions/deploy-pages@v4

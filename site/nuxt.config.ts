@@ -28,8 +28,8 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      // NUXT_PUBLIC_DOWNLOAD_URL: o repositório é privado, então o padrão abaixo
-      // só funciona para quem tem acesso. Aponte para uma URL pública do .msi.
+      // NUXT_PUBLIC_DOWNLOAD_URL: o repositório é público, então o padrão abaixo
+      // leva ao último release. Pode apontar para outra URL do .msi se quiser.
       downloadUrl: 'https://github.com/klawdyo/kapture/releases/latest',
       // NUXT_PUBLIC_SITE_URL (opcional): URL pública do site, usada nas tags og:*.
       siteUrl: '',
@@ -39,8 +39,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      htmlAttrs: { lang: 'pt-BR' },
-      link: [{ rel: 'icon', type: 'image/png', href: '/favicon.png' }]
+      htmlAttrs: { lang: 'pt-BR' }
     }
   },
 
