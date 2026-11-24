@@ -2,7 +2,12 @@
 
 Gravador de tela leve para Windows. Grava a tela inteira, uma janela ou uma área, com webcam, microfone e áudio do sistema, e salva em MP4.
 
-![Logo do Cap](assets/logo-light.png)
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo_light_transparent.png">
+    <img src="assets/logo_dark_transparent.png" alt="Logo do Cap" width="160">
+  </picture>
+</p>
 
 Site: https://klawdyo.github.io/kapture/ | Download: [última versão](https://github.com/klawdyo/kapture/releases/latest)
 

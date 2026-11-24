@@ -67,7 +67,7 @@ A Store exige `Major.Minor.Build.0`. O script força o 4º segmento em `0`; com 
 
 ## 6. Assets e capabilities
 
-- Assets atuais: `Square44x44`, `Square150x150`, `Wide310x150`, `StoreLogo` (escala única). Funciona, mas a Store e o Windows preferem variantes de escala (`.scale-100/125/150/200/400`) e `Square44x44Logo.targetsize-*`; recomenda-se gerá-las a partir da logo antes de publicar.
+- Assets atuais: `Square44x44`, `Square71x71`, `Square150x150`, `Wide310x150`, `Square310x310` e `StoreLogo` (escala única, logo transparente gerada por `scripts/make-icons.py`; veja `docs/BUILD.md`). As artes prontas da listagem da Store (caixa 1080 e 2160, pôster 720x1080 e 1440x2160, ícones 71, 150 e 300) estão em `assets/store/`; envie-as no Partner Center, elas não entram no pacote. Funciona, mas a Store e o Windows preferem variantes de escala (`.scale-100/125/150/200/400`) e `Square44x44Logo.targetsize-*`; recomenda-se gerá-las a partir da logo antes de publicar.
 - `webcam` e `microphone`: usadas por Media Foundation, WASAPI e `getUserMedia`.
 - `runFullTrust`: é obrigatória para qualquer app desktop Win32/Tauri empacotado em MSIX, porque o exe roda fora do sandbox UWP. Não dá para removê-la sem reescrever o app como UWP. É uma capability restrita: a Store pede uma justificativa no envio. Texto sugerido para o campo:
 

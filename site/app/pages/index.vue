@@ -48,7 +48,7 @@ const steps = [
       </template>
       <div class="relative mx-auto grid aspect-square w-full max-w-sm place-items-center sm:max-w-md">
         <div aria-hidden="true" class="absolute inset-[6%] rounded-full border border-default" />
-        <BrandLogo :size="320" priority alt="Logo do Cap: obturador de câmera com ponto vermelho de gravação" class="w-[72%] [&_img]:size-full [&_img]:shadow-2xl [&_img]:shadow-zinc-950/20" />
+        <BrandLogo :size="320" priority alt="Logo do Cap: obturador de câmera com ponto vermelho de gravação" class="w-[72%] [&_img]:size-full [&_img]:drop-shadow-2xl" />
         <RecPill class="absolute bottom-[3%] left-1/2 -translate-x-1/2" />
       </div>
     </UPageHero>
