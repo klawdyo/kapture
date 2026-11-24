@@ -40,7 +40,7 @@ O pacote não é assinado: serve para envio à Microsoft Store, que assina na ce
 
 ## Ícones
 
-`python3 assets/make_logo.py` (requer Pillow) regenera os SVGs em `assets/`, os ícones em `src-tauri/icons/` e os PNGs do MSIX em `packaging/msix/Assets/`.
+A logo oficial (raster 380x380, fundo opaco com grade, recortada da Figura 1 da especificação) está em `assets/logo-light.png` e `assets/logo-dark.png`. Os ícones em `src-tauri/icons/`, os PNGs do MSIX em `packaging/msix/Assets/`, as imagens do site e `src/assets/logo.png` derivam da versão escura (cantos arredondados aplicados). `docs/ui-reference.png` é só referência visual da interface.
 
 ## Release
 

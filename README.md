@@ -1,8 +1,8 @@
 # Cap
 
-Gravador de tela leve para Windows. Grava a tela inteira, uma janela ou uma área, com webcam em círculo, microfone e áudio do sistema, e salva em MP4.
+Gravador de tela leve para Windows. Grava a tela inteira, uma janela ou uma área, com webcam, microfone e áudio do sistema, e salva em MP4.
 
-![Logo do Cap](assets/logo-light.svg)
+![Logo do Cap](assets/logo-light.png)
 
 ## Como usar
 

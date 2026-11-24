@@ -6,10 +6,10 @@ import ModeSwitch from '../components/ModeSwitch.vue'
 import RecBtn from '../components/RecBtn.vue'
 import VuMeter from '../components/VuMeter.vue'
 import { useToolbar } from '../composables/useToolbar'
+import logo from '../assets/logo.png'
 import { FPS } from '../domain/cfg'
 import Box from '../ui/Box.vue'
 import Btn from '../ui/Btn.vue'
-import Icon from '../ui/Icon.vue'
 import Select from '../ui/Select.vue'
 
 const t = reactive(useToolbar())
@@ -27,7 +27,7 @@ onBeforeUnmount(t.dispose)
       <RecBtn :rec="true" @click="t.toggle()" />
     </template>
     <template v-else>
-      <Icon name="logo" :size="22" class="logo" />
+      <img :src="logo" class="logo" width="22" height="22" alt="Cap" draggable="false" />
       <ModeSwitch :model-value="t.mode" @update:model-value="t.setMode" />
       <Select v-if="t.opts.length" v-model="t.tid" :options="t.opts" title="Alvo" />
       <DevSelect :model-value="t.cam" :devs="t.devs.cams" icon="cam" none="Sem câmera" @update:model-value="t.setCam" />
@@ -51,7 +51,7 @@ onBeforeUnmount(t.dispose)
   padding: 6px 12px; border-radius: 999px; background: var(--bg); border: 1px solid var(--bd);
   backdrop-filter: blur(14px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
-.logo { color: var(--red); }
+.logo { width: 22px; height: 22px; border-radius: 6px; }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); animation: blink 1.2s infinite; }
 .dot.off { animation: none; background: var(--mut); }
 .clock { min-width: 48px; font-variant-numeric: tabular-nums; font-weight: 600; }

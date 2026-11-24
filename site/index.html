@@ -13,26 +13,17 @@
 <meta property="og:title" content="Cap, gravador de tela minimalista para Windows">
 <meta property="og:description" content="Grave tela, janela ou área em poucos cliques. Leve, sem FFmpeg, com atalho Ctrl+Shift+R.">
 <meta property="og:url" content="https://klawdyo.github.io/kapture/">
+<meta property="og:image" content="https://klawdyo.github.io/kapture/og.png">
+<meta property="og:image:alt" content="Logo do Cap: obturador de câmera com ponto vermelho de gravação">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%233a3d44'/%3E%3Ccircle cx='50' cy='50' r='13' fill='%23ef4444'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="favicon.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-  <symbol id="shutter" viewBox="0 0 100 100">
-    <g class="blade">
-      <path d="M50 4 L92 30 L64 50 L50 36 Z"/>
-      <path d="M96 50 L70 92 L50 64 L64 50 Z"/>
-      <path d="M50 96 L8 70 L36 50 L50 64 Z"/>
-      <path d="M4 50 L30 8 L50 36 L36 50 Z"/>
-    </g>
-    <circle class="dot" cx="50" cy="50" r="9"/>
-  </symbol>
-</svg>
 <a class="skip" href="#main">Pular para o conteúdo</a>
 <div class="wrap">
   <header class="top">
-    <a class="brand" href="#" aria-label="Cap, início"><svg aria-hidden="true"><use href="#shutter"/></svg>Cap</a>
+    <a class="brand" href="#" aria-label="Cap, início"><picture><source media="(prefers-color-scheme: dark)" srcset="logo-dark-64.png"><img src="logo-light-64.png" width="32" height="32" alt="" decoding="async"></picture>Cap</a>
     <nav aria-label="Principal">
       <ul>
         <li><a href="#recursos">Recursos</a></li>
@@ -52,8 +43,8 @@
         <span class="meta">Windows 10 e 11 · gratuito</span>
       </div>
     </div>
-    <div class="stage" aria-hidden="true">
-      <div class="shutter"><svg><use href="#shutter"/></svg></div>
+    <div class="stage">
+      <picture class="shutter"><source media="(prefers-color-scheme: dark)" srcset="logo-dark.png"><img src="logo-light.png" width="320" height="320" alt="Logo do Cap: obturador de câmera com ponto vermelho de gravação" decoding="async"></picture>
       <div class="pill"><span class="rec"></span>00:42<span class="sep"></span><span class="stop"></span></div>
     </div>
   </div>

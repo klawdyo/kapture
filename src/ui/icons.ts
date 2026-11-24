@@ -1,6 +1,5 @@
 // Catálogo de ícones (viewBox 24x24). f = preenchido; senão só contorno.
 export const ICONS = {
-  logo: { f: true, d: 'M12 3a9 9 0 100 18 9 9 0 000-18zm0 5a4 4 0 110 8 4 4 0 010-8z' },
   screen: { f: false, d: 'M3 5h18v11H3zM8 20h8M12 16v4' },
   window: { f: false, d: 'M3 5h18v14H3zM3 9h18' },
   area: { f: false, d: 'M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4' },
