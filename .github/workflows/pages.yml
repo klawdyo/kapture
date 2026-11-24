@@ -25,7 +25,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4.2.2
+      # Tenta habilitar o Pages sozinho; se o token não puder, ative em Settings > Pages > Source: GitHub Actions
       - uses: actions/configure-pages@v5.0.0
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3.0.1
         with:
           path: site
