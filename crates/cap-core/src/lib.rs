@@ -1,12 +1,14 @@
 //! Núcleo do Cap (Rust puro, sem Tauri/Windows).
 //!
 //! Camadas: `domain` (tipos e regras), `ports` (traits das capacidades
-//! externas), `app` (casos de uso) e `fakes` (implementações de teste).
+//! externas), `app` (casos de uso), `media` (cálculos puros de vídeo/áudio)
+//! e `fakes` (implementações de teste).
 
 pub mod app;
 pub mod domain;
 pub mod error;
 pub mod fakes;
+pub mod media;
 pub mod ports;
 
 pub use error::{CapErr, Res};
